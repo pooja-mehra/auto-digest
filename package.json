@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "jest": {
-    "verbose": true
+    "testEnvironment": "node"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
