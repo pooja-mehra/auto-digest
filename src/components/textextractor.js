@@ -1,5 +1,6 @@
 import { createWorker } from "tesseract.js";
 import { useState, useEffect } from "react";
+import "./textextractor.css";
 export default function TextExtractor() {
     const [ocr, setOcr] = useState([]);
     const [imageData, setImageData] = useState(null);
@@ -47,15 +48,17 @@ export default function TextExtractor() {
     }
     return (
       <div className="App">
-        <div>
-          <p>Choose an Image</p>
-          <input
-            type="file"
-            name=""
-            id=""
-            onChange={handleImageChange}
-            accept="image/*"
-          />
+        <div className="parent">
+            <div className="file-upload">
+            <p>Choose an Image of Receipt or list Items </p>
+                <input
+                type="file"
+                name=""
+                id=""
+                onChange={handleImageChange}
+                accept="image/*"
+              />
+            </div>
         </div>
         <div className="display-flex">
         {
@@ -65,7 +68,8 @@ export default function TextExtractor() {
                         <div style={{display:'flex'}} key={j}>
                             <p style={{margin:'auto'}}>{value}</p>
                         </div>
-                    )})
+                    )
+            })
         }
         </div>
       </div>

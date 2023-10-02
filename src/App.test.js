@@ -1,8 +1,16 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+/**
+ * @jest-environment node
+ */
+import { screen, render} from '@testing-library/react';
+import Details from './components/details'
+import HeaderTabs from './components/headertabs';
+import App from './App'
+test('App title', () =>{
+     render(<App/>)
+     expect(screen.getByText('TextExtractor'))
+})
+test('Details not found test',  () =>{
+     render(<Details/>)
+     expect(screen.getByText('No Data Found!'))
+})
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});
