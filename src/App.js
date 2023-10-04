@@ -4,7 +4,7 @@ export default function App() {
     return (
     <div>
       <header>
-        <title><h4>TextExtractor</h4></title>
+        <title><h4 data-testid="title">TextExtractor</h4></title>
       </header>
       <main>
         <HeaderTabs>

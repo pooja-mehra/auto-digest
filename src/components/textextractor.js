@@ -54,13 +54,13 @@ export default function TextExtractor() {
                 <input
                 type="file"
                 name=""
-                id=""
+                data-testid="file-upload"
                 onChange={handleImageChange}
                 accept="image/*"
               />
             </div>
         </div>
-        <div className="display-flex">
+        <div className="display-flex" data-testid="items">
         {
             ocr && ocr.length > 0 &&
             ocr.map((value,j)=>{
