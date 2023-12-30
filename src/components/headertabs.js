@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import DetailsIcon from '@mui/icons-material/Details';
 import TextExtractor from "./textextractor";
 import Details from "./details";
+import InsightsIcon from '@mui/icons-material/Insights';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import ShoppingList from "./shoppinglist";
+
 export default function HeaderTabs() {
     const [tabNumber, setTabNumber] = useState(0);
     const handleChange = (event, newValue) => {
@@ -12,11 +15,13 @@ export default function HeaderTabs() {
     };
     return (
         <div>
-        <Tabs value={tabNumber} onChange={handleChange} aria-label="icon tabs example">
-            <Tab icon={<UploadFileIcon />} aria-label="upload" label="upload">
+        <Tabs value={tabNumber} onChange={handleChange} aria-label="icon tabs example" style={{backgroundColor:'black'}}>
+            <Tab icon={<LibraryAddIcon />} style={{width:'calc(100vw / 4)' ,color:'white',margin:'auto'}} aria-label="upload" label="Add to Inventory">
             </Tab>
-            <Tab icon={<DetailsIcon />} aria-label="detail" label="details"/>
-        </Tabs>
+            <Tab icon={<InsightsIcon />} style={{width:'calc(100vw / 4)' ,color:'white',margin:'auto'}} aria-label="detail" label="Insights"/>
+            <Tab icon={<AddShoppingCartIcon />} style={{width:'calc(100vw / 4)' ,color:'white',margin:'auto'}} aria-label="detail" label="Shopping List"/>
+
+        </Tabs>       
         <div>
             {
                 tabNumber === 0 &&
@@ -25,6 +30,10 @@ export default function HeaderTabs() {
             {
                 tabNumber === 1 &&
                 <Details/>
+            }
+            {
+                tabNumber === 2 &&
+                <ShoppingList/>
             }
         </div>
         </div>

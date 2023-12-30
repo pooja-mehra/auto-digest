@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Commongrocery = require('../models/commongrocery')
 const Propergrocery = require('../models/propergrocery')
- 
+const Usergrocery = require('../models/usergrocery')
+
 function getoutputMap(data,childMap,indexMap,queryParams,field){
     return new Promise((resolve,reject)=>{
         if(data && data.length > 0){
@@ -42,11 +43,16 @@ function getChildMap(items){
 }
 )}
 
-router.get('/getgrocery', async(req,res,next)=>{
+function getISODate(date){
+    const dateParts = new Date(date).toLocaleDateString("en-US").split('/');
+    const isoDate = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
+    return isoDate
+}
+router.post('/getgrocery', async(req,res,next)=>{
     try {
         let childMap = new Map()
         let newChildMap = new Map()
-        const newArray =  req.query.items.map((string,index) => string.split(" ")).reduce((p,c,ci)=> p +','+ ci+c ).split(',');
+        const newArray =  req.body.items.map((string,index) => string.split(" ")).reduce((p,c,ci)=> p +','+ ci+c ).split(',');
         let nameParams =[]
         let abbrParams=[]
         if(newArray && newArray.length > 0){
@@ -63,13 +69,13 @@ router.get('/getgrocery', async(req,res,next)=>{
                 nameParams.push({ name: { $regex: new RegExp(item,'i')}})
             })
         }
-        req.query.items.forEach((item,index)=>{
+        req.body.items.forEach((item,index)=>{
             childMap.set(childMap.size,index)})
             const response1 = await Propergrocery.find(
                 {
                     //$or: nameParams,
                     $or:[
-                        {name:req.query.items},
+                        {name:req.body.items},
                         {abbr:{$in:abbrParams}}
 
                     ]
@@ -77,13 +83,13 @@ router.get('/getgrocery', async(req,res,next)=>{
                 },{_id:0, name:1, abbr:1})
                 const response2 = await Commongrocery.find(   
                 {
-                    name:{$in: req.query.items}
+                    name:{$in: req.body.items}
                 },{_id:0, name:1, abbr:1})
 
                 if(response1.length > 0 || response2.length > 0){
                     //const result = await getoutputMap(response1,childMap,new Map(),req.query.items,false)
 
-                    await getoutputMap(response1,childMap,new Map(),req.query.items,'name').then(async function(value){
+                    await getoutputMap(response1,childMap,new Map(),req.body.items,'name').then(async function(value){
                         let result = new Map()
                         if(value.size === 0){
                             await getoutputMap(response1,newChildMap,new Map(),abbrParams,'abbr').then(function(newValue){
@@ -94,7 +100,7 @@ router.get('/getgrocery', async(req,res,next)=>{
                         }
                         let finalResult = []
                         Array.from(result.keys()).forEach((k,i)=>{
-                            finalResult.push({abbr:req.query.items[k], name:result.get(k), index :k})
+                            finalResult.push({abbr:req.body.items[k], name:result.get(k), index :k})
                         })
                         res.send( {finalResult:finalResult});
                         }) 
@@ -141,6 +147,120 @@ router.get('/getcommongrocery', (req, res, next) => {
     Commongrocery.find({}, {_id:0, name:1})
         .then((data) => res.json(data))
         .catch(next);
+});
+
+router.post('/putusergrocery', (req, res, next) => {
+    const {purchaseDate,queryItems} = req.body
+    let isoDate = getISODate(purchaseDate)
+    let names = queryItems.map((i)=>i.name)
+    /*Usergrocery.bulkWrite(queryItems.map(item => ({
+            updateOne: {
+              filter: {
+                purchaseDate: {
+                  $eq: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate())
+                },
+                "items.name": item.name
+              },
+              update: {
+                //$addToSet: { items: item, $slice: -10 }, // Add the item if not present
+                $inc: { "items.$.qty": item.qty } // Increment the quantity if the item already exists
+              },
+              upsert: true // Create the document if it doesn't exist for the purchaseDate
+            }
+          }))).then((data)=>{
+            res.json(data)})
+            .catch(next);
+        })*/
+    Usergrocery.find({ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()),
+        items:{$elemMatch: {
+            name: { $in: names }}
+          }},
+    ).then((data)=>{
+        if(data && data.length > 0){
+            //let nameArray = data[0].items.map((d,i)=>d.name)
+            let nameAndDetailsArray = data[0].items.reduce((acc, details) => {
+                acc[details.name] = { qty: details.qty, abbr: details.abbr };
+                return acc;},{})
+            queryItems.forEach((item,i)=>{
+                if(nameAndDetailsArray[item.name]){
+                    //let index = nameArray.indexOf(item.name)
+                    item.qty = parseInt(item.qty) + parseInt(nameAndDetailsArray[item.name].qty)
+                }
+            })
+            
+        }
+        Usergrocery.updateOne({ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate())},
+            {$pull:{items:{name: { $in: names }}}}).then(()=>{
+                Usergrocery.updateOne({ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate())},
+                    {
+                        $push: { items: {$each: queryItems}}},
+                        { upsert:true}
+                    ).then((data) => {
+                        res.json(data)})
+                        .catch(next);
+              })
+        
+        })
+    })
+
+router.get('/getusergrocery', (req, res, next) => {
+    let isoStartDate =getISODate(req.query.startDate);
+    let isoEndDate =getISODate(req.query.endDate);
+    
+    Usergrocery.aggregate([
+        {$match:{"purchaseDate":{$lte:new Date(isoEndDate.getFullYear(), isoEndDate.getMonth(), isoEndDate.getDate()),
+            $gte:new Date(isoStartDate.getFullYear(), isoStartDate.getMonth(), isoStartDate.getDate())
+        }}},
+        {$unwind: "$items"},
+          {$group: {
+            _id:"$items.name", details: { $push: "$$ROOT" },count: { $count: { } }
+          }
+        },
+        {
+            $addFields:
+              {
+                qty : { $sum: "$details.items.qty" },
+              }
+          },
+          {$sort:{purchaseDate:1}},
+          {
+            $project:{
+              name:"$_id",details:1,count:1,qty:1,
+             _id:false} }
+      ]).then((data) => {
+        res.json(data)})
+    .catch(next);
+        
+    /*Usergrocery.find({ purchaseDate:{$lte:new Date(isoEndDate.getFullYear(), isoEndDate.getMonth(), isoEndDate.getDate()),
+        $gte:new Date(isoStartDate.getFullYear(), isoStartDate.getMonth(), isoStartDate.getDate())
+    }}, {_id:0}).sort({purchaseDate: 1})
+        .then((data) => {
+            console.log(data)
+            res.json(data)})
+        .catch(next);*/
+    });
+
+router.get('/getallusergrocery', (req, res, next) => {
+    Usergrocery.aggregate([
+        {$unwind: "$items"},
+          {$group: {
+            _id:"$items.name", details: { $push: "$$ROOT" },count: { $count: { } }
+          }
+        },
+        {
+            $addFields:
+              {
+                qty : { $sum: "$details.items.qty" },
+              }
+          },
+          {
+            $project:{
+              name:"$_id",details:1,count:1,qty:1,
+             _id:false} }
+      ]).then((data) => {
+        res.json(data)})
+    .catch(next);
+        
 });
 
 module.exports = router;

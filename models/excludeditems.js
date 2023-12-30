@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Create schema for todo
 const excludedItemsSchema = new Schema({
     name: {
         type: String,

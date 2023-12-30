@@ -1,24 +1,51 @@
 import { createWorker } from "tesseract.js";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import "./textextractor.css";
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
-import Tooltip from '@mui/material/Tooltip';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import Fab from '@mui/material/Fab';
+import ClearIcon from '@mui/icons-material/Clear';
+import Webcam from "react-webcam";
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import GridLoader from 'react-spinners/GridLoader'
+import SimpleDialog from '../functionality/simpleDialog'
+import UploadIcon from '@mui/icons-material/Upload';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import Tooltip from '@mui/material/Tooltip';
+import Alert from '@mui/material/Alert';
+import ListHeader from "../functionality/listheader";
+import ItemTable from "../functionality/itemTable";
 
 export default function TextExtractor() {
-    const [ocr, setOcr] = useState(new Map());
+    const [ocr, setOcr] = useState([{name:'',qty:1}]);
     const [imageData, setImageData] = useState(null);
-    const [parsedItem,isParsedItem] = useState(false)
+    const [parsedItem,isParsedItem] = useState(false);
+    const webcamRef = useRef(null);
+    const [open, setOpen] = useState(false);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none'});
+
+
+  const handleClick = (event) => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+    const videoConstraints = {
+      width: 500,
+      height: 600,
+      facingMode: "user"
+    };
     const convertImageToText = async() => {
     const worker = await createWorker()
       if (!imageData) return;
-      //await worker.load();
-      await worker.loadLanguage("eng");
-      await worker.initialize("eng");
+      //await worker.loadLanguage("eng");
+      //await worker.initialize("eng");
       const {
         data: { text },
       } = await worker.recognize(imageData);
@@ -34,81 +61,44 @@ export default function TextExtractor() {
                 if(test.length === 0 ){
                     if(item.match(/[a-zA-Z]+'?[a-zA-Z]+/g)){
                         let itemName = item.match(/[a-zA-Z]+'?[a-zA-Z]+/g).reduce((p,c)=> p + ' ' +c)
-                        items.push(itemName.toLowerCase())
+                        items.push(itemName)//lowercase to ckeck with db
                         filteredItem.push([...itemName.split(' ')].map((item)=> `^${item[0]}.*[${item}].*${item[item.length-1]}$`))
                     }
                 }
             })
-            getListItems(items,filteredItem)
-            //guessListItems(filteredItem)
+            items.length > 0 ? getListItems(items) :isParsedItem(true)
         }
     };
   
     useEffect(() => {
       convertImageToText();
-      setOcr(new Map())
       isParsedItem(false)
     }, [imageData]);
 
-    const getListItems = async (items,filteredItem) =>{
+    const getListItems = async (items) =>{
       let itemMap = new Map()
-      const urls = [
-        "http://localhost:8080/api/getgrocery",
-        //"http://localhost:8080/api/guessgrocery"
-      ];
-      
-      await Promise.all(
-        urls.map(url => axios.get(url,{params:{items:url===urls[0]?items:filteredItem}}).then(
-          res => {
-          if (res && res.data && res.data.finalResult && res.data.finalResult.length > 0){
-            return res.data.finalResult
-          } 
-        }).then((result)=>{
-        if(result && result.length > 0){
-          result.forEach((item)=>{
-            if(itemMap.has(item.name)){
-              let value = itemMap.get(item.name) +1
-              itemMap.set(item.name,value)
-            } else{
-              itemMap.set(item.name,1)
-            }
-          })
+      let itemArray =[]
+      items.forEach((item)=>{
+        if(itemMap.has(item.toUpperCase())){
+          let value = itemMap.get(item) +1
+          itemMap.set(item.toUpperCase(),value)
+        } else{
+          itemMap.set(item.toUpperCase(),1)
         }
-       
-      }) 
-        ))
-        setOcr(itemMap)
-        isParsedItem(true)
-    }
-    const guessListItems = async (items) => {
-      try{
-        await axios
-        .get('http://localhost:8080/api/guessgrocery', {params:{items:items}})
-        .then((res) => {
-            if (res && res.data && res.data.finalResult && res.data.finalResult.length > 0){
-              return res.data.finalResult
-            } 
-        }).then((result)=>{
-          let itemMap = new Map()
-          if(result && result.length > 0){
-            result.forEach((item)=>{
-              if(itemMap.has(item.name)){
-                let value = itemMap.get(item.name) +1
-                itemMap.set(item.name,value)
-              } else{
-                itemMap.set(item.name,1)
-              }
-            })
+      })
+      if(itemMap.size > 0)
+        {
+          for (const [key, value] of itemMap){
+            itemArray.push({name:key,qty:value})
           }
-          setOcr(itemMap)
-          isParsedItem(true)
-        })
-      }catch(err){
-        console.log(err)}
-      }
+        }
+      setOcr([...itemArray,...ocr])
+      isParsedItem(true)
+    }
 
     function handleImageChange(e) {
-      const file = e.target.files[0];
+      if(e.target.files.length > 0 ){
+        const file = e.target.files[0];
       if(!file)return;
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -116,77 +106,169 @@ export default function TextExtractor() {
         setImageData(imageDataUri);
       };
       reader.readAsDataURL(file);
-    }
-    const ListHeader = (props) =>{
-      return (
-        <div style={{display:'flex', margin:'5vw'}}>
-        <p style={{margin:'auto', flex:'2 1', textAlign:'left'}}>Items</p>
-        <p style={{margin:'auto', flex:'1 1', textAlign:'left'}}>Qty</p>
-        </div>
-      )
+      }
+      document.getElementById('file').value = null;
     }
 
     const LoadingSpinner = () =>{
       return (
-        <Box sx={{ display: 'flex' , margin:'45%'}}>
-          <CircularProgress />
-        </Box>
+        <div style={{ marginTop:'35vh', marginLeft:'45vw',width:'20vw', height:'20vh'}}>
+        <GridLoader color="rgb(76, 71, 71)" />
+        </div>
       )
     }
 
-    const ItemsTooltip = () =>{
-      return (
-        <Tooltip title="Delete">
-          Click to edit!
-        </Tooltip>
-      );
+    const CustomWebcam = () => {
+      return(
+        <Dialog
+        fullScreen
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title" textAlign={'center'}>
+        <button onClick={capture} className="capture">Capture photo</button>
+        <button onClick={()=>handleClose()} className="capture">Cancel</button>
+
+        </DialogTitle>
+        <DialogContent >
+          <div className="container" style={{textAlign:'center'}}>
+            <Webcam ref={webcamRef}  screenshotFormat="image/png" videoConstraints = {videoConstraints}
+            />
+          
+        </div>
+        </DialogContent>
+       
+      </Dialog>
+      )
+      
+    };
+
+    function dataURLtoFile(dataurl, filename) {
+      var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while(n--){
+          u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], filename, {type:mime});
+  }
+
+    const header=[{id:'icon',label:<AddIcon/>,maxWidth: 50,type:'icon'},
+    {id:'name',label:'Name',minWidth: 170, type:"string"},
+    {id:'qty',label:'Quantity',maxWidth: 50, type:"number"}]
+
+    const addItem = (row) =>{
+      setOcr([{name:row.name,qty:row.qty},...ocr])
     }
+  const deleteItem = (i) =>{
+    setOcr(ocr.filter((d,index)=>index !== i))
+
+  };
+  const formatItem =(i, label,text)=>{
+    setOcr(ocr.map((item,index)=> {
+      if(index === i){
+        return ({...item,[label]:text.toUpperCase()})
+      } else{
+        return item
+      }
+    }))
+  }
+
+    const setDialog = async (isOpen, isCancel, purchaseDate) =>{
+      setOpenDialog(isOpen)
+      setImageData(null)
+      if(!isCancel){
+        if(ocr.length > 0){
+          
+          try{  
+            await axios.post("http://localhost:8080/api/putusergrocery",{purchaseDate:purchaseDate,queryItems:ocr}).then((res)=>{
+              if(new Date(purchaseDate).getTime() <= Date.now() &&
+              new Date(purchaseDate).getTime() >= Date.now()-24*6*3600*1000){
+                localStorage.removeItem('details')
+              }
+            setOcr([]) 
+            setOpenAlert({isOpen:true,status:'success'})
+            })
+          } catch(e){
+            console.log(e)
+          }
+        } else{
+          setOpenAlert({isOpen:true,status:'fail'})
+        }
+      }
+      openAlert.isOpen === true && setTimeout(()=>{
+        setOpenAlert({isOpen:false,status:'none'})
+
+      },2000)
+    }
+
+    const capture = useCallback(async() => {
+      const imageSrc = webcamRef.current.getScreenshot()
+      const file = dataURLtoFile(imageSrc, 'a.png');
+      if(!file)return;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const imageDataUri = reader.result;
+        setImageData(imageDataUri);
+      };
+      reader.readAsDataURL(file);
+      handleClose()
+    }, [webcamRef]);
     return (
-      <div className="App">
-        <div className="parent">
+      <div className="main" style={{display: 'flex',height:'90vh',flexDirection:'column',overflowY:'hidden'}}>
+      <div  style={{display: 'flex',height:'85vh',flexDirection:'column'}}>
+      {
+        imageData != null && !parsedItem ?
+        <LoadingSpinner  />  :
+        <ItemTable shoppingList={ocr} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'presentList'}/>
+      }
+      </div>
+        <div className="listFooter" >
+            <div  className="file-upload">
+              <Tooltip title='Clear All' >
+              <p><ClearIcon size="large" style={{color:'white'}} onClick={()=>{
+                setOcr([])
+                setImageData(null)
+              }}/></p>
+            </Tooltip>
+            </div>
             <div className="file-upload">
-            <p>Choose an Image of Receipt or list Items </p>
+            <Tooltip title='Add to Inventory'>
+              <p><SaveIcon style={{color:'white'}} onClick={()=>{
+                setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
+                setOpenDialog(true)
+              }}/></p>
+            </Tooltip>
+            </div>
+              <div  className="file-upload">
+                <Tooltip title='Upload from Device'>
+                <p><UploadIcon style={{color:'white'}}></UploadIcon></p>
                 <input
                 type="file"
                 id="file"
                 data-testid="file-upload"
                 onChange={handleImageChange}
                 accept="image/*"
+                hidden
               />
+              </Tooltip>
+            </div>
+            <div className="camera">
+            <CustomWebcam />
+            <Tooltip title='Take a Picture'>
+              <p><PhotoCameraIcon style={{color:'white'}}></PhotoCameraIcon></p>     
+              <button onClick = {handleClick} >
+              </button>
+            </Tooltip>
             </div>
         </div>
-        <div className="display-flex" data-testid="items">
+        <SimpleDialog openDialog ={openDialog} itemList={ocr} type = {'date'} setDialog={setDialog}></SimpleDialog>
+        <div style={{marginTop:'-7vh'}}>
         {
-          parsedItem && 
-          <div>
-            <ListHeader/> 
-            <Fab position={'bottom'} style={{marginLeft:'45%'}} color="primary" aria-label="add">
-              <AddIcon />
-            </Fab>          
-          </div>
-           
-        }
-        {
-
-            ocr && ocr.size > 0 &&
-            Array.from(ocr.keys()).map((item,i)=>{
-              return (
-                <div  style={{display:'flex'}} key={i}>
-                <Tooltip title="Click to edit!" placement="top-start">
-                  <p contentEditable suppressContentEditableWarning={true} style={{margin:'5vw', flex:'2 1', textAlign:'left'}}>{item}
-                  </p>
-                </Tooltip>
-                <Tooltip title="Click to edit!" placement="top-start">
-                  <p contentEditable suppressContentEditableWarning={true} style={{margin:'5vw', flex:'1 1', textAlign:'left'}}>{ocr.get(item)}</p>
-                  </Tooltip>
-                </div>
-              )
-            })
-        }
-        {
-          document.getElementById('file') && document.getElementById('file').attributes.type.ownerElement.value &&
-          ocr.size === 0 && !parsedItem &&
-            <LoadingSpinner />
+          openAlert.isOpen &&
+          <Alert variant="filled" severity={openAlert.status==='success'?'success':'error'}>{openAlert.status==='success'?
+        'Items sucessfully added to Inventory':'No Items to Add'}</Alert>
         }
         </div>
       </div>

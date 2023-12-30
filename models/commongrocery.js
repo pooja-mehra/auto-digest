@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Create schema for todo
 const commongrocerySchema = new Schema({
     name: {
         type: String,
