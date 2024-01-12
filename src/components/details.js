@@ -1,4 +1,4 @@
-import { LineChart, BarChart, getValueToPositionMapper } from '@mui/x-charts';
+import { BarChart } from '@mui/x-charts';
 import { useState, useEffect} from 'react';
 import axios from 'axios';
 import TextField from '@mui/material/TextField';
@@ -18,27 +18,29 @@ export default function Details() {
       });
     const [item =new Map(),setItem] = useState()
     useEffect(()=>{
-        if(dateRange == null){
+        if(dateRange === null || details === null){
             getUserGrocery(null)
-        } else{
+        } //else{
             if(item && item.size >0 && details && details.length>0 ){
-            let values = Object.keys([...item.values()][0])
-            if(details.filter((d,i)=>values.includes(d.name)).length > 0){
-                Object.keys([...item.values()][0]).forEach((value,i)=>{
-                    alterItems(value,values)                
-                })
-            let value = [...item.values()]
-            let keys = [...item.keys()]
-            value.filter((v,index)=>{
-                if(Object.values(v).reduce((a,b)=> {return a+b}) === 0){
-                    item.delete(keys[index])
-                    setItem(new Map(item))
-                }})
-            } 
-        }else{
+                let values = Object.keys([...item.values()][0])
+                if(details.filter((d,i)=>values.includes(d.name)).length > 0){
+                    Object.keys([...item.values()][0]).forEach((value,i)=>{
+                        alterItems(value,values)                
+                    })
+                    let value = [...item.values()]
+                    let keys = [...item.keys()]
+                    value.filter((v,index)=>{
+                        if(Object.values(v).reduce((a,b)=> {return a+b}) === 0){
+                            item.delete(keys[index])
+                            setItem(new Map(item))
+                        }})
+                } else{
+                    setItem(new Map())
+                }
+            }else{
             setItem(new Map())
         }
-        }
+        //}
     },[dateRange])
 
     const data = (itemIndex) =>{
@@ -71,33 +73,45 @@ export default function Details() {
         return mergedlabel
     }
     const alterItems = (itemName,values)=>{
-        let filteredDetails = details.filter((d,i)=>values.includes(d.name)).map((item,i)=> item.details)
-        .reduce((p,c)=>{return [...p,...c]})
+        let filteredDetails = []
+        details.forEach((d,i)=>{
+            if(values.includes(d.name)){
+            d.details.forEach((a,i)=>{
+                filteredDetails.push({...a,name:d.name})
+            })
+        }
+        return filteredDetails
+        })//.map((item,i)=> item.details)
+        /*.reduce((p,c)=>{
+            console.log(c)
+            return [...p,...c]})*/
         if(item.size > 0){
             for (const [key, value] of item) {
                 value[itemName] = 0
             }
         }
+        console.log(filteredDetails)
         filteredDetails.forEach((d,i)=>{
-                if(item.has(d.purchaseDate)){
-                    let value = item.get(d.purchaseDate)
-                    if(d.items.name === itemName){
-                        value[itemName] = d.items.qty
-                    }
-                    setItem(new Map(item.set(d.purchaseDate,value)))
-                    } else{
-                        setItem(new Map(item.set(d.purchaseDate,{[itemName]:d.items.qty})))
-                        if(values.length > 0){
-                            values.forEach((v,i)=>{
-                            let obj = item.get(d.purchaseDate)
-                            if(!Object.keys(obj).includes(v)){
-                                obj[v] = 0
-                                setItem(new Map(item.set(d.purchaseDate,{...obj,[v]:0})))
-                            }
-                        })
-                    }
+            if(item.has(d.purchaseDate)){
+                let value = item.get(d.purchaseDate)
+                let qty = Object.keys(value).includes(itemName)?parseInt(value[itemName]):0
+                if(d.name === itemName){
+                    value[itemName] = d.qty + qty
+                }
+                setItem(new Map(item.set(d.purchaseDate,value)))
+                } else{
+                    setItem(new Map(item.set(d.purchaseDate,{[itemName]:d.qty})))
+                    if(values.length > 0){
+                        values.forEach((v,i)=>{
+                        let obj = item.get(d.purchaseDate)
+                        if(!Object.keys(obj).includes(v)){
+                            obj[v] = 0
+                            setItem(new Map(item.set(d.purchaseDate,{...obj,[v]:0})))
+                        }
+                    })
+                }
         
-                }   
+            }   
         })        
     }
     const handleChange = (event,values,reason) => {
@@ -132,28 +146,35 @@ const getData =() =>{
     }
 
    const getUserGrocery = async(dateRange) =>{
-    const startDate = dateRange == null ? new Date(new Date(Date.now()).getTime() - 30 * 24 * 3600 * 1000):new Date(dateRange.startDate)
-    const endDate = dateRange == null ? new Date(Date.now()):new Date(dateRange.endDate)
+    //const startDate = dateRange == null ? new Date(new Date(Date.now()).getTime() - 100 * 24 * 3600 * 1000):new Date(dateRange.startDate)
+    //const endDate = dateRange == null ? new Date(Date.now()):new Date(dateRange.endDate)
+    if(dateRange == null || details === null){
         try{
-            await axios.get("http://localhost:8080/api/getusergrocery",{params:{startDate:startDate,endDate:endDate}}).then((res)=>{
-            //let dataMap = new Map()
+            await axios.get("http://localhost:8080/api/getallusergrocery",{params:{page:0,rowsPerPage:0}}).then((res)=>{
             if(res && res.data.length > 0){
-                /*let result= res.data.map((d,i)=> {return d.items.reduce((acc, details) => {
-                    acc[details.name] = { qty: details.qty, abbr: details.abbr,purchaseDate:new Date(d.purchaseDate).toLocaleDateString("en-US") };
-                    return acc;},{})
-                })
-                    result.forEach(r => {
-                    Object.entries(r).forEach(([k,v])=>{
-                        if(dataMap.has(k)){
-                            let value = {totalQty:dataMap.get(k).totalQty + v.qty, abbr:[...dataMap.get(k).abbr,...v.abbr], purchaseDate:[...dataMap.get(k).purchaseDate,v.purchaseDate],qty:[...dataMap.get(k).qty,v.qty]}
-                            dataMap.set(k,value)
-                        } else{
-                            dataMap.set(k,{totalQty:v.qty,abbr:v.abbr,purchaseDate:[v.purchaseDate],qty:[v.qty]})
-                        }
-                    })
-                    
-                });*/
-                
+                localStorage.setItem('details',JSON.stringify(res.data))
+                setDetails(res.data)
+            } else{
+                localStorage.removeItem('details')
+                setDetails(null)
+            }
+            })
+        } catch(e){
+            console.log(e)
+        }
+        dateRange && localStorage.removeItem('daterange')
+        setDateRange(null)
+    }else{
+        localStorage.getItem('details') && setDetails(JSON.parse(localStorage.getItem('details')).map((item,index)=> 
+        ({count:item.count,name:item.name,qty:item.qty,details:item.details.filter((d,i)=>
+            new Date(d.purchaseDate) >= new Date(dateRange.startDate) && 
+            new Date(d.purchaseDate) <= new Date(dateRange.endDate))})).filter((m,i)=> m.details.length>0))
+        localStorage.setItem('daterange',JSON.stringify({startDate:dateRange.startDate,endDate:dateRange.endDate}))
+        setDateRange({startDate:dateRange.startDate,endDate:dateRange.endDate})
+    }
+        /*try{
+            await axios.get("http://localhost:8080/api/getusergrocery",{params:{startDate:startDate,endDate:endDate}}).then((res)=>{
+            if(res && res.data.length > 0){
                 localStorage.setItem('details',JSON.stringify(res.data))
                 setDetails(res.data)
             } else{
@@ -165,7 +186,7 @@ const getData =() =>{
             })
         } catch(e){
             console.log(e)
-        }
+        }*/
     }
     
     const setDialog = async (isOpen, isCancel, purchaseDaterange) =>{
@@ -180,7 +201,7 @@ const getData =() =>{
         <div className='parent'>
         <div className="listHeader">
         {
-            details !== null &&
+            (details !== null || (details && details.length >0)) &&
             <div style={{display:'flex'}}>
             <Autocomplete
             multiple
@@ -190,23 +211,24 @@ const getData =() =>{
             getOptionLabel={(option) => option}
             onChange={(e,v,r)=>handleChange(e,v,r)}
             sx={{width:'50vw'}}
-            renderInput={(params) => <TextField {...params} label="Item name" />}
+            value={item.size>0?Object.keys([...item.values()][0]):[]}
+            renderInput={(params) => <TextField {...params}  label="Item name"/>}
         />
         </div>
     
         }
-        <Button size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} onClick={()=>setOpenDialog(true)}> Purchase Date</Button>
-
+        <Button size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} 
+        onClick={()=>setOpenDialog(true)}> Purchase Date</Button>
         </div>
         </div>
-        <div style={{maxWidth:'100vw', width:'auto', maxHeight:'50vh', height:'auto',marginTop:'2vh'}}>
+        <div style={{maxWidth:'100vw', width:'auto', maxHeight:'50vh', height:'auto',marginTop:'2vh'}} >
         {
-            details != null && item.size === 0 &&
+            (details !== null && (details && details.length >0)) && item.size === 0 &&
             <BarChart
             height={450}
             dataset={details}
-            series={[{dataKey:'qty',label:'Total Quantity'}]}
-            slotProps={{
+            series={[{dataKey:'qty',label:'Total Quantity',}]}
+            slotProps={{                
                 legend: {
                  hidden:true
                 },
@@ -214,10 +236,11 @@ const getData =() =>{
             yAxis={[{label:'Total Quantity'}]}
             xAxis={[{ scaleType: 'band', dataset:details,
             dataKey:'name',
-            label:'(Date Range: '+ new Date(dateRange.startDate).toLocaleDateString('en-us') +' - '+ new Date(dateRange.endDate).toLocaleDateString('en-us')+ ' )' }]}
+            label:dateRange === null ? '' :'(Date Range: '+ new Date(dateRange.startDate).toLocaleDateString('en-us') +' - '+ new Date(dateRange.endDate).toLocaleDateString('en-us')+ ' )' 
+        }]}
             />  }
         {
-        details !== null && item.size > 0 &&
+        (details !== null || (details && details.length >0)) && item.size > 0 &&
         <BarChart
         height={450}
         dataset={[...item.values()]}
@@ -232,7 +255,7 @@ const getData =() =>{
         yAxis={[{label:'Quantity'}]}
         xAxis={[{ scaleType: 'band', data:[...item.keys()], 
         valueFormatter:(value)=>{
-            return(new Date(value).toLocaleDateString('en-us'))},label:'(Date Range: '+ new Date(dateRange.startDate).toLocaleDateString('en-us') +' - '+ new Date(dateRange.endDate).toLocaleDateString('en-us')+ ' )' }]}
+            return(new Date(value).toLocaleDateString('en-us'))},label:dateRange === null ? '' : '(Date Range: '+ new Date(dateRange.startDate).toLocaleDateString('en-us') +' - '+ new Date(dateRange.endDate).toLocaleDateString('en-us')+ ' )' }]}
         />}
         </div>
         <SimpleDialog openDialog ={openDialog} type={'daterange'} setDialog={setDialog}></SimpleDialog>

@@ -5,14 +5,12 @@ const mongoose = require('mongoose');
 const routes = require('./routes/api');
 
 require('dotenv').config();
-// Set up the server
 const app = express();
 mongoose
     .connect(process.env.DB, { useNewUrlParser: true })
     .then(() => console.log(`Database connected successfully`))
     .catch((err) => console.log(err));
 
-// Since mongoose's Promise is deprecated, we override it with Node's Promise
 mongoose.Promise = global.Promise;
 app.use(bodyParser.json());
 app.use(cors())
@@ -43,7 +41,6 @@ app.get("/", async (req,res) =>{
   res.json({proper:properName,common:commonName})
 })
 
-// Start the server
 const port = 8080;
 app.listen(port, (req,res) => {
   console.log(`Server listening on port ${port}`);

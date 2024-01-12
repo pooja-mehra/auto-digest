@@ -1,6 +1,12 @@
 import './App.css';
 import HeaderTabs from "./components/headertabs";
+import { useEffect } from 'react';
 export default function App() {
+  useEffect(()=>{
+    if(localStorage.getItem('details')){
+      localStorage.removeItem('details')
+    }
+  })
     return (
     <div>
       <header>

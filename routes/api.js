@@ -3,6 +3,7 @@ const router = express.Router();
 const Commongrocery = require('../models/commongrocery')
 const Propergrocery = require('../models/propergrocery')
 const Usergrocery = require('../models/usergrocery')
+const Usergroceries = require('../models/usergroceries')
 
 function getoutputMap(data,childMap,indexMap,queryParams,field){
     return new Promise((resolve,reject)=>{
@@ -48,6 +49,7 @@ function getISODate(date){
     const isoDate = new Date(dateParts[2], dateParts[0] - 1, dateParts[1]);
     return isoDate
 }
+
 router.post('/getgrocery', async(req,res,next)=>{
     try {
         let childMap = new Map()
@@ -149,28 +151,10 @@ router.get('/getcommongrocery', (req, res, next) => {
         .catch(next);
 });
 
-router.post('/putusergrocery', (req, res, next) => {
+/*router.post('/putusergrocery', (req, res, next) => {
     const {purchaseDate,queryItems} = req.body
     let isoDate = getISODate(purchaseDate)
     let names = queryItems.map((i)=>i.name)
-    /*Usergrocery.bulkWrite(queryItems.map(item => ({
-            updateOne: {
-              filter: {
-                purchaseDate: {
-                  $eq: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate())
-                },
-                "items.name": item.name
-              },
-              update: {
-                //$addToSet: { items: item, $slice: -10 }, // Add the item if not present
-                $inc: { "items.$.qty": item.qty } // Increment the quantity if the item already exists
-              },
-              upsert: true // Create the document if it doesn't exist for the purchaseDate
-            }
-          }))).then((data)=>{
-            res.json(data)})
-            .catch(next);
-        })*/
     Usergrocery.find({ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()),
         items:{$elemMatch: {
             name: { $in: names }}
@@ -201,7 +185,7 @@ router.post('/putusergrocery', (req, res, next) => {
               })
         
         })
-    })
+    })*/
 
 router.get('/getusergrocery', (req, res, next) => {
     let isoStartDate =getISODate(req.query.startDate);
@@ -240,19 +224,25 @@ router.get('/getusergrocery', (req, res, next) => {
         .catch(next);*/
     });
 
-router.get('/getallusergrocery', (req, res, next) => {
+/*router.get('/getallusergrocery', (req, res, next) => {
+    let skip = req.query.page && req.query.rowsPerPage ? req.query.page * req.query.rowsPerPage :0
+    let limit = req.query.rowsPerPage ? parseInt(req.query.rowsPerPage): 0
     Usergrocery.aggregate([
         {$unwind: "$items"},
           {$group: {
-            _id:"$items.name", details: { $push: "$$ROOT" },count: { $count: { } }
+            _id:"$items.name", details: { $push: "$$ROOT" },
+            count: { $count: { } } 
           }
         },
         {
             $addFields:
               {
-                qty : { $sum: "$details.items.qty" },
+                qty : { $sum: "$details.items.qty" }
               }
           },
+          {$sort:{"_id":-1}},
+          //{$skip:skip},
+          //{$limit:limit},
           {
             $project:{
               name:"$_id",details:1,count:1,qty:1,
@@ -261,6 +251,80 @@ router.get('/getallusergrocery', (req, res, next) => {
         res.json(data)})
     .catch(next);
         
-});
+});*/
+
+router.post('/putusergrocery', (req, res, next) => {
+    const {purchaseDate,queryItems} = req.body
+    let isoDate = getISODate(purchaseDate)
+    queryItems.forEach((item)=>{
+        console.log(item.qty)
+        Usergroceries.findOne({ name: item.name }).then((documentToUpdate)=>{
+            if (documentToUpdate ) {
+            const dateExists = documentToUpdate.details.some(detail => 
+                detail.purchaseDate.getTime() === new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()).getTime()
+            );
+        
+            if (dateExists) {
+            // If the date exists, update the quantity in the matching details element
+            Usergroceries.updateOne(
+              { name: item.name, "details.purchaseDate": new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()) },
+              { $inc: { "details.$.qty": item.qty } }
+            ).then((data)=>{
+                //console.log(data)
+            })
+            } else {
+            // If the date doesn't exist, push a new details element with the specified date and quantity
+            Usergroceries.updateOne(
+              { name: item.name },
+              { $push: { details: { purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty:item.qty } } }
+            ).then((data)=>{
+                console.log(data)
+            })
+            }
+            } else {
+            // If the document with itemName doesn't exist, create a new document
+            Usergroceries.create({
+                name: item.name,
+                used:0,
+                details: [{ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty:item.qty }]
+            });
+            }
+        }).then((data)=>{
+            console.log(data)
+            res.json(data)
+        })
+    })
+})
+router.get('/getallusergrocery', (req, res, next) => {
+    Usergroceries.aggregate([
+    {
+        $addFields:
+        {
+            qty : { $sum: "$details.qty" },
+            left:{ $subtract: [ {$sum: "$details.qty"},  "$used"]},
+            lastPurchaseDate:{$max:"$details.purchaseDate"},
+            firstPurchaseDate:{$min:"$details.purchaseDate"},
+            daysTillNow:{
+                $dateDiff:
+                {
+                    startDate: {$min:"$details.purchaseDate"},
+                    endDate: new Date(),
+                    unit: "day"
+                }
+            }
+        }
+    },
+    {
+        $project:{
+            name:1,details:1,qty:1,used:1, left:1, lastPurchaseDate:1, firstPurchaseDate:1, daysTillNow:1, count: {$size: "$details"},_id:false} }]).then((data) => {res.json(data)})
+        .catch(next);
+    });
+
+router.post('/updateusergrocerybyname', (req,res,next)=>{
+    const{name,used} = req.body
+    Usergroceries.updateOne({name:name},{used:used}).then((data)=>{
+        res.json(data)
+    }).catch(next);
+})
 
 module.exports = router;

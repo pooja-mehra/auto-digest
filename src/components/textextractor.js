@@ -2,7 +2,6 @@ import { createWorker } from "tesseract.js";
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import "./textextractor.css";
-import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -16,18 +15,16 @@ import UploadIcon from '@mui/icons-material/Upload';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import Tooltip from '@mui/material/Tooltip';
 import Alert from '@mui/material/Alert';
-import ListHeader from "../functionality/listheader";
 import ItemTable from "../functionality/itemTable";
 
 export default function TextExtractor() {
-    const [ocr, setOcr] = useState([{name:'',qty:1}]);
+    const [ocr, setOcr] = useState([]);
     const [imageData, setImageData] = useState(null);
     const [parsedItem,isParsedItem] = useState(false);
     const webcamRef = useRef(null);
     const [open, setOpen] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none'});
-
 
   const handleClick = (event) => {
     setOpen(true);
@@ -36,11 +33,11 @@ export default function TextExtractor() {
   const handleClose = () => {
     setOpen(false);
   };
-    const videoConstraints = {
+    const [videoConstraints,setVideoConstraints] = useState({
       width: 500,
       height: 600,
       facingMode: "user"
-    };
+    });
     const convertImageToText = async() => {
     const worker = await createWorker()
       if (!imageData) return;
@@ -61,12 +58,12 @@ export default function TextExtractor() {
                 if(test.length === 0 ){
                     if(item.match(/[a-zA-Z]+'?[a-zA-Z]+/g)){
                         let itemName = item.match(/[a-zA-Z]+'?[a-zA-Z]+/g).reduce((p,c)=> p + ' ' +c)
-                        items.push(itemName)//lowercase to ckeck with db
+                        items.push({name:itemName,qty:1})//lowercase to ckeck with db
                         filteredItem.push([...itemName.split(' ')].map((item)=> `^${item[0]}.*[${item}].*${item[item.length-1]}$`))
                     }
                 }
             })
-            items.length > 0 ? getListItems(items) :isParsedItem(true)
+            items.length > 0 ? mergeShoppingList(items,false) :isParsedItem(true)
         }
     };
   
@@ -75,25 +72,37 @@ export default function TextExtractor() {
       isParsedItem(false)
     }, [imageData]);
 
-    const getListItems = async (items) =>{
+    useEffect(() => {
+      openAlert.isOpen && openAlert.isOpen === true && setTimeout(()=>{
+        setOpenAlert({isOpen:false,status:'none'})
+      },2000)
+    }, [openAlert]);
+
+    const mergeShoppingList = (items, isSaving) =>{
       let itemMap = new Map()
       let itemArray =[]
       items.forEach((item)=>{
-        if(itemMap.has(item.toUpperCase())){
-          let value = itemMap.get(item) +1
-          itemMap.set(item.toUpperCase(),value)
+        if(itemMap.has(item.name.toUpperCase())){
+          let value = parseInt(itemMap.get(item.name))  + parseInt(item.qty)
+          itemMap.set(item.name.toUpperCase(),value)
         } else{
-          itemMap.set(item.toUpperCase(),1)
+          itemMap.set(item.name.toUpperCase(),parseInt(item.qty))
         }
       })
       if(itemMap.size > 0)
         {
           for (const [key, value] of itemMap){
-            itemArray.push({name:key,qty:value})
+            itemArray.push({name:key,qty:parseInt(value)})
           }
         }
-      setOcr([...itemArray,...ocr])
-      isParsedItem(true)
+        if(isSaving){
+          setOcr([...itemArray])
+          return [...itemArray]
+        } else{
+          setOcr([...itemArray,...ocr])
+          isParsedItem(true)
+
+        }
     }
 
     function handleImageChange(e) {
@@ -130,7 +139,7 @@ export default function TextExtractor() {
         <DialogTitle id="alert-dialog-title" textAlign={'center'}>
         <button onClick={capture} className="capture">Capture photo</button>
         <button onClick={()=>handleClose()} className="capture">Cancel</button>
-
+        <button onClick={()=>{setVideoConstraints({...videoConstraints,facingMode:videoConstraints.facingMode==='user'?'environment':'user'})}} className="capture">Switch Camera</button>
         </DialogTitle>
         <DialogContent >
           <div className="container" style={{textAlign:'center'}}>
@@ -154,20 +163,23 @@ export default function TextExtractor() {
       return new File([u8arr], filename, {type:mime});
   }
 
-    const header=[{id:'icon',label:<AddIcon/>,maxWidth: 50,type:'icon'},
+    const header=[{id:'addicon',label:<AddIcon/>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 170, type:"string"},
     {id:'qty',label:'Quantity',maxWidth: 50, type:"number"}]
 
-    const addItem = (row) =>{
-      setOcr([{name:row.name,qty:row.qty},...ocr])
-    }
-  const deleteItem = (i) =>{
-    setOcr(ocr.filter((d,index)=>index !== i))
+  const addItem = (row,page,rowsPerPage) =>{
+    ocr.splice((page*rowsPerPage),0,{name:row.name,qty:parseInt(row.qty)})
+    setOcr([...ocr])
+    //setOcr([{name:row.name,qty:parseInt(row.qty)},...ocr])
+  }
 
+  const deleteItem = (i,page,rowsPerPage) =>{
+    setOcr([...ocr.filter((item,index)=> index !== (i+(page*rowsPerPage)))])
   };
-  const formatItem =(i, label,text)=>{
+
+  const formatItem =(label,text,page,rowsPerPage,i)=>{
     setOcr(ocr.map((item,index)=> {
-      if(index === i){
+      if(index === (i+(page*rowsPerPage))){
         return ({...item,[label]:text.toUpperCase()})
       } else{
         return item
@@ -180,27 +192,24 @@ export default function TextExtractor() {
       setImageData(null)
       if(!isCancel){
         if(ocr.length > 0){
-          
+          let ocrQuery = mergeShoppingList(ocr,true)
           try{  
-            await axios.post("http://localhost:8080/api/putusergrocery",{purchaseDate:purchaseDate,queryItems:ocr}).then((res)=>{
+            await axios.post("http://localhost:8080/api/putusergrocery",{purchaseDate:purchaseDate,queryItems:ocrQuery}).then((res)=>{
               if(new Date(purchaseDate).getTime() <= Date.now() &&
               new Date(purchaseDate).getTime() >= Date.now()-24*6*3600*1000){
-                localStorage.removeItem('details')
+                localStorage.removeItem('daterange')
               }
-            setOcr([]) 
+            
             setOpenAlert({isOpen:true,status:'success'})
             })
           } catch(e){
             console.log(e)
           }
+          setOcr([]) 
         } else{
           setOpenAlert({isOpen:true,status:'fail'})
         }
-      }
-      openAlert.isOpen === true && setTimeout(()=>{
-        setOpenAlert({isOpen:false,status:'none'})
-
-      },2000)
+      } 
     }
 
     const capture = useCallback(async() => {
@@ -233,14 +242,6 @@ export default function TextExtractor() {
               }}/></p>
             </Tooltip>
             </div>
-            <div className="file-upload">
-            <Tooltip title='Add to Inventory'>
-              <p><SaveIcon style={{color:'white'}} onClick={()=>{
-                setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
-                setOpenDialog(true)
-              }}/></p>
-            </Tooltip>
-            </div>
               <div  className="file-upload">
                 <Tooltip title='Upload from Device'>
                 <p><UploadIcon style={{color:'white'}}></UploadIcon></p>
@@ -260,6 +261,14 @@ export default function TextExtractor() {
               <p><PhotoCameraIcon style={{color:'white'}}></PhotoCameraIcon></p>     
               <button onClick = {handleClick} >
               </button>
+            </Tooltip>
+            </div>
+            <div className="file-upload">
+            <Tooltip title='Add to Inventory'>
+              <p><SaveIcon style={{color:'white'}} onClick={()=>{
+                setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
+                setOpenDialog(true)
+              }}/></p>
             </Tooltip>
             </div>
         </div>
