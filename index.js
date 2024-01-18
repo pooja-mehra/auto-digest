@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 });
 app.use('/api', routes);
 app.use(express.static(path.join(__dirname, '../build')));
-  app.get('/', (req, res) => {
+  app.get('/*', (req, res) => {
     console.log(path.join(__dirname, '../build', 'index.html'))
     res.sendFile(path.join(__dirname, '../build', 'index.html'));
   })
