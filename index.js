@@ -3,6 +3,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const routes = require('./routes/api');
+const path = require('path');
 
 require('dotenv').config();
 const app = express();
@@ -20,9 +21,10 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/api', routes);
-app.get("/", async (req,res) =>{
-  res.json({success:'success'})
-})
+app.use(express.static(path.join(__dirname, 'build')));
+  app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  })
 const port = 8080;
 app.listen(port, (req,res) => {
   console.log(`Server listening on port ${port}`);
