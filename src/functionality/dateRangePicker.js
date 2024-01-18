@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DateRangePicker } from 'react-date-range';
-import 'react-date-range/dist/styles.css'; // main style file
-import 'react-date-range/dist/theme/default.css'; // theme css file
+import 'react-date-range/dist/styles.css'; 
+import 'react-date-range/dist/theme/default.css'; 
 
 const DateRangePickerComponent = (props) => {
   const [selection, setSelection] = useState({
@@ -11,7 +11,6 @@ const DateRangePickerComponent = (props) => {
   });
 
   const handleSelect = (ranges) => {
-    // ranges will contain start date and end date
     props.setDateRange(ranges.selection)
     setSelection(ranges.selection);
   };
@@ -21,7 +20,7 @@ const DateRangePickerComponent = (props) => {
       <DateRangePicker
         ranges={[selection]}
         onChange={handleSelect}
-        rangeColors={['#3e82f7']} // Set the color of the selected range
+        rangeColors={['#3e82f7']}
       />
       <p>
         Selected Range: {selection.startDate.toDateString()} - {selection.endDate.toDateString()}

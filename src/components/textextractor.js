@@ -16,6 +16,8 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import Tooltip from '@mui/material/Tooltip';
 import Alert from '@mui/material/Alert';
 import ItemTable from "../functionality/itemTable";
+import BarcodeScanner from "../functionality/barcodescanner";
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 
 export default function TextExtractor() {
     const [ocr, setOcr] = useState([]);
@@ -23,12 +25,28 @@ export default function TextExtractor() {
     const [parsedItem,isParsedItem] = useState(false);
     const webcamRef = useRef(null);
     const [open, setOpen] = useState(false);
+    const [openScanner, setOpenScanner] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
-    const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none'});
+    const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
+    const [scannedData,setScannedData] = useState(null)
 
-  const handleClick = (event) => {
-    setOpen(true);
-  };
+    const handleScan = async(decodedText) => {
+      try{  
+        await axios.get("http://localhost:8080/api/getscannedgrocerybycode",{params:{code:parseInt(decodedText)}})
+        .then((res)=>{
+        if(res && res.data){
+          localStorage.setItem('code',decodedText)
+          setScannedData(null)
+          setScannedData({name:res.data.name,qty:1})
+        }
+        })} catch(e){
+          console.log(e)
+        }
+    };
+
+    useEffect(()=>{
+      scannedData && setOcr([scannedData,...ocr])
+    },[scannedData])
 
   const handleClose = () => {
     setOpen(false);
@@ -41,8 +59,6 @@ export default function TextExtractor() {
     const convertImageToText = async() => {
     const worker = await createWorker()
       if (!imageData) return;
-      //await worker.loadLanguage("eng");
-      //await worker.initialize("eng");
       const {
         data: { text },
       } = await worker.recognize(imageData);
@@ -53,15 +69,15 @@ export default function TextExtractor() {
             let filteredItem =[]
             let items = []
             itemArray.forEach((item,i)=>{
-                let test = [...item.split(' ')].filter((itemI,i)=>
-                    excludedItems.includes(itemI.toUpperCase()) || excludedItems.includes(itemI.concat('S').toUpperCase()))
-                if(test.length === 0 ){
+                /*let test = [...item.split(' ')].filter((itemI,i)=>
+                    excludedItems.includes(itemI.toUpperCase()) || excludedItems.includes(itemI.concat('S').toUpperCase()))*/
+                //if(test.length === 0 ){
                     if(item.match(/[a-zA-Z]+'?[a-zA-Z]+/g)){
                         let itemName = item.match(/[a-zA-Z]+'?[a-zA-Z]+/g).reduce((p,c)=> p + ' ' +c)
                         items.push({name:itemName,qty:1})//lowercase to ckeck with db
                         filteredItem.push([...itemName.split(' ')].map((item)=> `^${item[0]}.*[${item}].*${item[item.length-1]}$`))
                     }
-                }
+               // }
             })
             items.length > 0 ? mergeShoppingList(items,false) :isParsedItem(true)
         }
@@ -74,7 +90,7 @@ export default function TextExtractor() {
 
     useEffect(() => {
       openAlert.isOpen && openAlert.isOpen === true && setTimeout(()=>{
-        setOpenAlert({isOpen:false,status:'none'})
+        setOpenAlert({isOpen:false,status:'none', msg:''})
       },2000)
     }, [openAlert]);
 
@@ -83,8 +99,8 @@ export default function TextExtractor() {
       let itemArray =[]
       items.forEach((item)=>{
         if(itemMap.has(item.name.toUpperCase())){
-          let value = parseInt(itemMap.get(item.name))  + parseInt(item.qty)
-          itemMap.set(item.name.toUpperCase(),value)
+          let value = parseInt(itemMap.get(item.name.toUpperCase()))  + parseInt(item.qty)
+          itemMap.set(item.name.toUpperCase(),parseInt(value))
         } else{
           itemMap.set(item.name.toUpperCase(),parseInt(item.qty))
         }
@@ -101,7 +117,6 @@ export default function TextExtractor() {
         } else{
           setOcr([...itemArray,...ocr])
           isParsedItem(true)
-
         }
     }
 
@@ -130,7 +145,7 @@ export default function TextExtractor() {
     const CustomWebcam = () => {
       return(
         <Dialog
-        fullScreen
+        fullWidth
         open={open}
         onClose={handleClose}
         aria-labelledby="alert-dialog-title"
@@ -143,9 +158,7 @@ export default function TextExtractor() {
         </DialogTitle>
         <DialogContent >
           <div className="container" style={{textAlign:'center'}}>
-            <Webcam ref={webcamRef}  screenshotFormat="image/png" videoConstraints = {videoConstraints}
-            />
-          
+            <Webcam ref={webcamRef}  screenshotFormat="image/png" videoConstraints = {videoConstraints}/>      
         </div>
         </DialogContent>
        
@@ -168,9 +181,7 @@ export default function TextExtractor() {
     {id:'qty',label:'Quantity',maxWidth: 50, type:"number"}]
 
   const addItem = (row,page,rowsPerPage) =>{
-    ocr.splice((page*rowsPerPage),0,{name:row.name,qty:parseInt(row.qty)})
-    setOcr([...ocr])
-    //setOcr([{name:row.name,qty:parseInt(row.qty)},...ocr])
+    setOcr([{name:row.name,qty:parseInt(row.qty)},...ocr])
   }
 
   const deleteItem = (i,page,rowsPerPage) =>{
@@ -200,14 +211,14 @@ export default function TextExtractor() {
                 localStorage.removeItem('daterange')
               }
             
-            setOpenAlert({isOpen:true,status:'success'})
+            setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
             })
           } catch(e){
             console.log(e)
           }
           setOcr([]) 
         } else{
-          setOpenAlert({isOpen:true,status:'fail'})
+          setOpenAlert({isOpen:true,status:'error', msg:'No Items to Add!'})
         }
       } 
     }
@@ -224,15 +235,25 @@ export default function TextExtractor() {
       reader.readAsDataURL(file);
       handleClose()
     }, [webcamRef]);
+
+    const setScanStatus =()=>{
+      setOpenScanner(false)
+    }
+
     return (
-      <div className="main" style={{display: 'flex',height:'90vh',flexDirection:'column',overflowY:'hidden'}}>
-      <div  style={{display: 'flex',height:'85vh',flexDirection:'column'}}>
+      <div className="main" style={{display: 'flex',height:'95vh',flexDirection:'column',overflowY:'hidden'}}>
+      <BarcodeScanner handleScan={handleScan} openScanner={openScanner} setScanStatus={setScanStatus}/> 
       {
+        open &&
+        <CustomWebcam />
+      }
+      <div  style={{display: 'flex',height:'85vh',flexDirection:'column'}}>
+      {     
         imageData != null && !parsedItem ?
         <LoadingSpinner  />  :
         <ItemTable shoppingList={ocr} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'presentList'}/>
-      }
-      </div>
+        }
+        </div>
         <div className="listFooter" >
             <div  className="file-upload">
               <Tooltip title='Clear All' >
@@ -256,10 +277,18 @@ export default function TextExtractor() {
               </Tooltip>
             </div>
             <div className="camera">
-            <CustomWebcam />
             <Tooltip title='Take a Picture'>
               <p><PhotoCameraIcon style={{color:'white'}}></PhotoCameraIcon></p>     
-              <button onClick = {handleClick} >
+              <button onClick = {()=> setOpen(!open)} >
+              </button>
+            </Tooltip>
+            </div>
+            <div className="camera">
+            <Tooltip title='Scan Barcode'>
+              <p><QrCodeScannerIcon style={{color:'white'}}></QrCodeScannerIcon></p>     
+              <button onClick = {()=>{
+                setOpenScanner(!openScanner)
+              }} >
               </button>
             </Tooltip>
             </div>
@@ -276,8 +305,7 @@ export default function TextExtractor() {
         <div style={{marginTop:'-7vh'}}>
         {
           openAlert.isOpen &&
-          <Alert variant="filled" severity={openAlert.status==='success'?'success':'error'}>{openAlert.status==='success'?
-        'Items sucessfully added to Inventory':'No Items to Add'}</Alert>
+          <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
         }
         </div>
       </div>

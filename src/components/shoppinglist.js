@@ -4,22 +4,27 @@ import ItemTable from '../functionality/itemTable';
 import AddIcon from '@mui/icons-material/Add';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import SaveIcon from '@mui/icons-material/Save';
 import SimpleDialog from '../functionality/simpleDialog'
 import Alert from '@mui/material/Alert';
+import Chip from '@mui/material/Chip';
+import ClearIcon from '@mui/icons-material/Clear';
+import Tooltip from '@mui/material/Tooltip';
+import DoneOutlineIcon from '@mui/icons-material/DoneOutline';
 
 export default function ShoppingList() {
-    const [shoppingList,setShoppingList] = useState([])
+    const [shoppingList,setShoppingList] = useState(
+      () => {
+        const storedData = localStorage.getItem('shoppinglist');
+        return storedData ? JSON.parse(storedData) : [];
+      })
     const [shoppedList,setShoppedList] = useState([])
     const [openDialog, setOpenDialog] = useState(false);
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
     const [details, setDetails]  = useState(null)
     const [consumed,setConsumed] = useState({used:0,left:0})
-
-    const header=[{id:'addicon',label:<AddIcon/>,minWidth: 50,type:'icon'},
+    const header=[{id:'addicon',label:<AddIcon/>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 170, type:"string"},
     {id:'qty',label:'Quantity',minWidth: 170, type:"number"}]
-
     const  shoppedHeader=[{id:'none',label:'',minWidth: 50},
     {id:'name',label:'Name',minWidth: 170, type:"string"},
     {id:'left',label:'Quantity Left',minWidth: 170, type:"number"},
@@ -37,6 +42,10 @@ export default function ShoppingList() {
         setOpenAlert({isOpen:false,status:'none',msg:''})
       },2000)
     },[openAlert])
+
+    useEffect(()=>{
+      shoppingList.length>0 && localStorage.setItem('shoppinglist',JSON.stringify(shoppingList.filter((item,i)=>item.name !== '' && item.qty !=='' && item.qty >0)))
+    },[shoppingList])
 
     const getAllUserGrocery = async(details) =>{
      if(details === null){
@@ -85,9 +94,9 @@ export default function ShoppingList() {
       return s
       }))
       if(!itemExists){
-        shoppingList.splice(page*rowsPerPage,0,{name:row.name,qty:1})
-        setShoppingList([...shoppingList])
+        setShoppingList([{name:row.name,qty:1},...shoppingList])
       }
+      row  && row.left> 0 && setOpenAlert({isOpen:true,status:'warning',msg:row.left+' more ' + row.name+' left from past purchase'})
     }
 
     const deleteItem = (i,page,rowsPerPage) =>{
@@ -144,7 +153,7 @@ export default function ShoppingList() {
             console.log(e)
           }
         } else{
-          setOpenAlert({isOpen:true,status:'fail',msg:'No Items to Add'})
+          setOpenAlert({isOpen:true,status:'error',msg:'No Items to Add'})
         }
       }
     }
@@ -168,56 +177,59 @@ export default function ShoppingList() {
         await axios.post('http://localhost:8080/api/updateusergrocerybyname',{name:details.name,used:consumed.used}).then((res)=>{
           if(res && res.status === 200){
             getAllUserGrocery(null)
-            /*if(localStorage.getItem('details')){
-              let storedDetails = JSON.parse(localStorage.getItem('details')).map((d,i)=> { if(d.name === itemName){
-                return ({...d,used:consumed.used})
-              } else{
-                return d
-              }})
-              localStorage.setItem('details',JSON.stringify(storedDetails))
-              setDetails({...details,used:consumed.used})
-            } else{
-              getAllUserGrocery()
-            }*/
             setOpenAlert({isOpen:true,status:'success',msg:`Successfully updated item: ${itemName}`})
           }
         })
         
       } catch(e){
         console.log(e)
-        setOpenAlert({isOpen:false,status:'fail',msg:`Failed to updated item: ${itemName}`})
+        setOpenAlert({isOpen:false,status:'error',msg:`Failed to updated item: ${itemName}`})
       }
        
     }
 
     return(
         <div className="main" style={{display: 'flex',height:'90vh', flexDirection:'column'}}>
+        <div className='presentlist'>
+          <ItemTable shoppingList={shoppingList} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'presentList'}/>
+          <div style={{width:'100%'}}>
+          {
+            openAlert.isOpen &&
+            <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
+          }
+            <div className='shoppinglistFooter'>
+              <div  className="shoppingfile-upload">
+                  <Tooltip title='Clear All' >
+                  <p><ClearIcon size="large" style={{color:'white'}} onClick={()=>{
+                    setShoppingList([])
+                  }}/></p>
+                </Tooltip>
+              </div>
+              <div className='shoppingfile-upload'>
+                <Tooltip title='Save to Inventory' >
+                <p>
+                <DoneOutlineIcon style={{color:'white'}} onClick={()=>{
+                  setShoppingList(shoppingList.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
+                  setOpenDialog(true)
+                }}/>
+                </p>
+                </Tooltip>
+              </div>
+              </div>
+            </div>
+          </div>
+        <div style={{marginTop:'1vh'}}>
+            <Divider>
+            <Chip label='Past Purchase'></Chip>
+            </Divider>
+        </div>
+        <div className="pastlist">
+          <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
+          changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
+          header={shoppedHeader}/>
+        </div>
         <SimpleDialog openDialog ={openDialog} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
-        <div >
-        {
-          openAlert.isOpen &&
-          <Alert variant="filled" severity={openAlert.status==='success'?'success':'error'}>{openAlert.msg}</Alert>
-        }
         </div>
-        <div  style={{display: 'flex',height:'45vh',flexDirection:'column'}}>
-        <ItemTable shoppingList={shoppingList} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'presentList'}/>
-        </div>
-        <div>
-        <div style={{backgroundColor:'black', height:'3.5vh', textAlign:'right'}} >
-        <SaveIcon style={{color:'white', margin:'auto',marginRight:'5vw'}} onClick={()=>{
-          setShoppingList(shoppingList.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
-          setOpenDialog(true)
-        }}/>
-        </div>
-        <Divider>
-        Past Purchase
-        </Divider>
-        </div>
-        <div className="pastList">
-        <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
-        changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
-        header={shoppedHeader}/>
-        </div>
-        </div>
+        
     )
 }

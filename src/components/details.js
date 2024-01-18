@@ -52,11 +52,9 @@ export default function Details() {
             //let labelArray = []
             for (let j = 0; j < details.length; j++) {
             if (details[j].details[i] !== undefined) {
-                //labelArray.push(details[j].details[i].items.qty)
                 dataArray.push({qty:details[j].details[i].items.qty,purchaseDate:details[j].details[i].purchaseDate,name:details[j].name,index:j});
             } else {
                 dataArray.push({qty:'',purchaseDate:'',name:details[j].name,index:j});
-                //labelArray.push('')
             }
             }
             mergedData.push(dataArray)
@@ -81,16 +79,12 @@ export default function Details() {
             })
         }
         return filteredDetails
-        })//.map((item,i)=> item.details)
-        /*.reduce((p,c)=>{
-            console.log(c)
-            return [...p,...c]})*/
+        })
         if(item.size > 0){
             for (const [key, value] of item) {
                 value[itemName] = 0
             }
         }
-        console.log(filteredDetails)
         filteredDetails.forEach((d,i)=>{
             if(item.has(d.purchaseDate)){
                 let value = item.get(d.purchaseDate)
@@ -146,8 +140,6 @@ const getData =() =>{
     }
 
    const getUserGrocery = async(dateRange) =>{
-    //const startDate = dateRange == null ? new Date(new Date(Date.now()).getTime() - 100 * 24 * 3600 * 1000):new Date(dateRange.startDate)
-    //const endDate = dateRange == null ? new Date(Date.now()):new Date(dateRange.endDate)
     if(dateRange == null || details === null){
         try{
             await axios.get("http://localhost:8080/api/getallusergrocery",{params:{page:0,rowsPerPage:0}}).then((res)=>{
@@ -172,21 +164,6 @@ const getData =() =>{
         localStorage.setItem('daterange',JSON.stringify({startDate:dateRange.startDate,endDate:dateRange.endDate}))
         setDateRange({startDate:dateRange.startDate,endDate:dateRange.endDate})
     }
-        /*try{
-            await axios.get("http://localhost:8080/api/getusergrocery",{params:{startDate:startDate,endDate:endDate}}).then((res)=>{
-            if(res && res.data.length > 0){
-                localStorage.setItem('details',JSON.stringify(res.data))
-                setDetails(res.data)
-            } else{
-                localStorage.removeItem('details')
-                setDetails(null)
-            }
-            localStorage.setItem('daterange',JSON.stringify({startDate:startDate,endDate:endDate}))
-            setDateRange({startDate:startDate,endDate:endDate})
-            })
-        } catch(e){
-            console.log(e)
-        }*/
     }
     
     const setDialog = async (isOpen, isCancel, purchaseDaterange) =>{

@@ -20,26 +20,6 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/api', routes);
-app.get("/", async (req,res) =>{
-  const properNameList = ['PEANUT', 'PEANUTs','Almond'];
-  const commonNameList = ['Pattie', 'BUTTER','slice'];
-  let properName =[]
-  let commonName=[]
-  let itemName = 'AV PNT Bttr';
-  let subStringArray = itemName.split(" ")
-  subStringArray.forEach((name,i)=>{
-    let nameCharArray = name.replace(/\s/g, "").split("");
-    let regexNameChars = (''+[...nameCharArray].map((n,i)=>'(?=.*['+n+n.toUpperCase()+'])') + '')
-        .replaceAll(',','')
-    properNameList.filter((item,i)=> {if(item.match(regexNameChars)){
-      properName.push(item)
-    }})
-    commonNameList.filter((item,i)=> {if(item.match(regexNameChars)){
-      commonName.push(item)
-    }})
-  })
-  res.json({proper:properName,common:commonName})
-})
 
 const port = 8080;
 app.listen(port, (req,res) => {

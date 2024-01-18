@@ -14,8 +14,7 @@ import Collapse from '@mui/material/Collapse';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Button from '@mui/material/Button';
-import EditIcon from '@mui/icons-material/Edit';
-
+import Tooltip from '@mui/material/Tooltip';
 
 export default function ItemTable(props) {
   const {shoppingList,type,details,consumed} = props
@@ -38,11 +37,12 @@ export default function ItemTable(props) {
  
   return (
     <Paper sx={{ width: '95%', overflow: 'auto', margin:'auto' ,marginTop:'1vh',marginBottom:'1vh'}}>
-      <TableContainer style={{height:'90%',margin:'auto'}}>
+      <TableContainer style={{height:'100%',margin:'auto'}}>
         <Table stickyHeader aria-label="sticky table" size="small">
           <TableHead>
             <TableRow>
               {props.header.map((column) => (
+                
                 <TableCell
                   key={column.id}
                   align={column.align}
@@ -52,7 +52,9 @@ export default function ItemTable(props) {
                     props.addItem({name:'',qty:1},page,rowsPerPage)
                   }}}
                 >
+                <Tooltip title={column.id === 'addicon'?'Add Item':''}>
                   {column.label}
+                </Tooltip>
                 </TableCell>
               ))}
             </TableRow>
@@ -68,16 +70,20 @@ export default function ItemTable(props) {
                       const value = row[column.id]
                       return (
                         column.id === 'none' ?  <TableCell key={column.id+(i+page * rowsPerPage)}>
+                        <Tooltip title='Add Item to Shopping List'>
                         <AddIcon onClick={()=>{
                           props.addItem(row, page, rowsPerPage)
                         }}/>
+                        </Tooltip>
                         </TableCell>: column.id === 'addicon'?
                         <TableCell key={column.id+(i+page * rowsPerPage)}>
+                        <Tooltip title='Delete Item'>
                         <DeleteIcon onClick={()=>{
                           if(column.id === 'addicon'){
                             props.deleteItem(i,page,rowsPerPage)
                           }
                         }}/>
+                        </Tooltip>
                         </TableCell>
                         :column.id==='details'? <TableCell key={column.id+(i+page * rowsPerPage)}>
                         {
