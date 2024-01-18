@@ -1,6 +1,6 @@
 {
   "homepage":"https://auto-digest.vercel.app",
-  "name": "template-ai",
+  "name": "auto-digest",
   "version": "0.1.0",
   "private": true,
   "proxy": "http://localhost:8080",
