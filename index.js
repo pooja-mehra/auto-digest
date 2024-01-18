@@ -20,7 +20,9 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/api', routes);
-
+app.get("/", async (req,res) =>{
+  res.json({success:'success'})
+})
 const port = 8080;
 app.listen(port, (req,res) => {
   console.log(`Server listening on port ${port}`);
