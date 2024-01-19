@@ -1,6 +1,7 @@
 {
   "homepage":"https://auto-digest.vercel.app",
   "name": "auto-digest",
+  "main": "index.js",
   "version": "0.1.0",
   "private": true,
   "proxy": "http://localhost:8080",
