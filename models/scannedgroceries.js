@@ -14,6 +14,10 @@ const scannedGroceriesSchema = new Schema({
     category:{
         type:String,
         required:false
+    },
+    brand:{
+        type:String,
+        required:false
     }
     
 }, { collection: 'scannedgroceries_list'});

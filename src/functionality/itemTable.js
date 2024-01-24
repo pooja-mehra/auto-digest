@@ -42,7 +42,6 @@ export default function ItemTable(props) {
           <TableHead>
             <TableRow>
               {props.header.map((column) => (
-                
                 <TableCell
                   key={column.id}
                   align={column.align}
@@ -97,13 +96,13 @@ export default function ItemTable(props) {
                           }}/>
                         }
                         </TableCell>:
-                        <TableCell id = {column.id+(i+page * rowsPerPage)} key={column.id+(i+page * rowsPerPage)} contentEditable={props.type === 'presentList' && column.id !== 'addicon'} 
+                        <TableCell id = {column.id+(i+page * rowsPerPage)} key={column.id+(i+page * rowsPerPage)} contentEditable={(props.type === 'presentList' || props.type === 'shoppingList') && column.id !== 'addicon'} 
                         suppressContentEditableWarning={true} align={column.align} 
                         onMouseOver={()=>{
-                          props.type === 'presentList' && HandleMouseOver(column.id+(i+page * rowsPerPage))
+                          (props.type === 'presentList'|| props.type === 'shoppingList') && HandleMouseOver(column.id+(i+page * rowsPerPage))
                         }}
                         onMouseOut={(e)=>{
-                          props.type === 'presentList' && column.type !== 'icon' && props.formatItem(column.id,e.target.innerText,page,rowsPerPage,i)
+                          (props.type === 'presentList' || props.type === 'shoppingList')&& column.type !== 'icon' && props.formatItem(column.id,e.target.innerText,page,rowsPerPage,i)
                           }}
                           onKeyDown={(e)=>{
                             column.type === 'number' &&  e.key.match(/[^0-9]/) && e.key !== 'Backspace' && e.preventDefault()

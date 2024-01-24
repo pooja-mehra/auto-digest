@@ -10,7 +10,7 @@ const BarCodeScanner = (props) => {
             props.handleScan(decodedText)
             setTimeout(()=>{
                 localStorage.removeItem('code')
-              },2000)
+            },4000)
         }
     }
 

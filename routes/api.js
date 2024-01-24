@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Usergroceries = require('../models/usergroceries')
 const ScannedGroceries = require('../models/scannedgroceries')
+const UserShopping = require('../models/usershoppinglist')
 
 function getISODate(date){
     const dateParts = new Date(date).toLocaleDateString("en-US").split('/');
@@ -9,6 +10,30 @@ function getISODate(date){
     return isoDate
 }
 
+router.post('/putusershoppinglist', (req, res, next) => {
+    const {listName, queryItems} = req.body
+    try{
+        UserShopping.updateOne({listName:listName},{$set: { items:queryItems}}, {upsert:true}).then((data)=>{
+            res.json(data)
+        })
+    } catch(e){
+        console.log(e)
+    }
+   
+})
+
+router.get('/getusershoppinglistnames', (req,res,next)=>{
+    UserShopping.find({},{_id:0,listName:1}).then((data)=>{
+        res.json(data)
+    })
+})
+
+router.get('/getshoppinglistbyname', (req,res,next)=>{
+    const listName = req.query.listName
+    UserShopping.findOne({listName:listName},{_id:0,"items.name":1,"items.qty":1}).then((data)=>{
+        res.json(data)
+    })
+})
 
 router.post('/putusergrocery', (req, res, next) => {
     const {purchaseDate,queryItems} = req.body
@@ -25,13 +50,15 @@ router.post('/putusergrocery', (req, res, next) => {
             Usergroceries.updateOne(
               { name: item.name, "details.purchaseDate": new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()) },
               { $inc: { "details.$.qty": item.qty } }
-            )
+            ).then((data)=>{
+            })
             } else {
             // If the date doesn't exist, push a new details element with the specified date and quantity
             Usergroceries.updateOne(
               { name: item.name },
               { $push: { details: { purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty:item.qty } } }
-            )
+            ).then((data)=>{
+            })
             }
             } else {
             // If the document with itemName doesn't exist, create a new document
