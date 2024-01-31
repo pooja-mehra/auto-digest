@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Avatar from '@mui/material/Avatar';
 import GoogleIcon from '@mui/icons-material/Google';
 import Chip from '@mui/material/Chip';
+const base_url = process.env.REACT_APP_BASE_URL
 
 export default function MainToolabr(props){
   const [user, setUser] = useState({email:'',avatar:'',userId:''})
@@ -36,8 +37,10 @@ export default function MainToolabr(props){
 
   const confirmUser = async(email,picture) =>{
     try{  
-      await axios.post("http://localhost:8080/api/confirmuser",{email:email,creationDate:new Date(Date.now())}).then((res)=>{
+      await axios.post(`${base_url}api/confirmuser`,{email:email,creationDate:new Date(Date.now())}).then((res)=>{
        if(res && res.status === 200){
+        alert(res.data.email)
+        alert(res.data._id)
         setUser({email:res.data.email,avatar:picture, userId:res.data._id})
        }
       })
