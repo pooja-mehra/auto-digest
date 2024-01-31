@@ -21,7 +21,7 @@ export default function HeaderTabs() {
    
     return (
         <div>
-        <Tabs value={tabNumber} onChange={handleChange} aria-label="icon tabs example" style={{height:'10vh',backgroundColor:'#673ab7'}}>
+        <Tabs value={tabNumber} onChange={handleChange} aria-label="icon tabs example" style={{height:'auto',backgroundColor:'#673ab7'}}>
             <Tab icon={<LibraryAddIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="upload" label="Add to Inventory">
             </Tab>
             <Tab icon={<InsightsIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Insights"/>

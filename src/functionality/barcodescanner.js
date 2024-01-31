@@ -32,7 +32,7 @@ const BarCodeScanner = (props) => {
     const handleStartScan = () => {
         const html5QrCode = new Html5QrcodeScanner(
             'scanner',
-            { fps: 10, qrbox: {height:200,width:400},
+            { fps: 10, qrbox: {height:250,width:350},
             supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]},
             );
             html5QrCode.render(onScanSuccess);

@@ -252,7 +252,6 @@ export default function TextExtractor(prop) {
     }
 
     return (
-      
       <div className="main" style={{display: 'flex',height:'80vh',flexDirection:'column',overflowY:'auto',marginTop:'2vh'}}>
       <BarcodeScanner handleScan={handleScan} openScanner={openScanner} setScanStatus={setScanStatus}/> 
       {
