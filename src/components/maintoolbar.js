@@ -38,6 +38,7 @@ export default function MainToolabr(props){
   const confirmUser = async(email,picture) =>{
     try{  
       await axios.post(`${base_url}api/confirmuser`,{email:email,creationDate:new Date(Date.now())}).then((res)=>{
+        alert(res.status)
        if(res && res.status === 200){
         alert(res.data.email)
         alert(res.data._id)
