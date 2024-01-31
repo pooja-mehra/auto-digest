@@ -44,6 +44,7 @@ export default function ShoppingList(prop) {
     {id:'details',label:'',minWidth: 50}]
 
     useEffect(()=>{
+      alert(prop && prop.userId?prop.userId:'fail')
         getAllUserGrocery(localStorage.getItem('details')?JSON.parse(localStorage.getItem('details')):null)
         details && setConsumed({used:details.used?details.used:0,left:details.used?details.qty-details.used:details.qty})
     },[details,prop])
