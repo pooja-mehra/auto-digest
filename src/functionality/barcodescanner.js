@@ -34,7 +34,7 @@ const BarCodeScanner = (props) => {
             'scanner',
             { fps: 10, qrbox: {height:200,width:400},
             supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
-            {facingMode: { exact: isMobile?"environment":"user"}}
+            {facingMode:isMobile?"environment":"user"}
             );
             html5QrCode.render(onScanSuccess);
 
