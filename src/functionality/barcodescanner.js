@@ -33,7 +33,7 @@ const BarCodeScanner = (props) => {
         const html5QrCode = new Html5QrcodeScanner(
             'scanner',
             { fps: 10, qrbox: {height:200,width:400},
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], facingMode: isMobile?'environment':'user' },
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]},
             );
             html5QrCode.render(onScanSuccess);
 
