@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const ObjectId = mongoose.Types.ObjectId;
 const Schema = mongoose.Schema;
 
 const detailsSchema = new Schema({
@@ -13,7 +14,11 @@ const detailsSchema = new Schema({
     },
 })
 
-const usergroceriesSchema = new Schema({
+const userInventorySchema = new Schema({
+    userId:{
+        type:ObjectId,
+        required: true
+    },
     name: {
         type: String,
         required: true,
@@ -35,9 +40,10 @@ const usergroceriesSchema = new Schema({
         type:String,
         required:false
     }
+},
     
-}, { collection: 'usergroceries_list'});
+{ collection: 'userInventory_list'});
 
-const Usergroceries = mongoose.model('usergroceries_list', usergroceriesSchema);
+const UserInventories = mongoose.model('userInventory_list', userInventorySchema);
 
-module.exports = Usergroceries;
+module.exports = UserInventories;

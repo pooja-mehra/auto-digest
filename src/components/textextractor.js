@@ -8,7 +8,6 @@ import ClearIcon from '@mui/icons-material/Clear';
 import Webcam from "react-webcam";
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import GridLoader from 'react-spinners/GridLoader'
 import SimpleDialog from '../functionality/simpleDialog'
 import UploadIcon from '@mui/icons-material/Upload';
@@ -18,8 +17,13 @@ import Alert from '@mui/material/Alert';
 import ItemTable from "../functionality/itemTable";
 import BarcodeScanner from "../functionality/barcodescanner";
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import Fuse from "fuse.js";
+import Button from '@mui/material/Button';
+import Fab from '@mui/material/Fab';
+import {isMobile} from 'react-device-detect';
+const base_url = process.env.REACT_APP_BASE_URL
 
-export default function TextExtractor() {
+export default function TextExtractor(prop) {
     const [ocr, setOcr] = useState([]);
     const [imageData, setImageData] = useState(null);
     const [parsedItem,isParsedItem] = useState(false);
@@ -29,15 +33,18 @@ export default function TextExtractor() {
     const [openDialog, setOpenDialog] = useState(false);
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
     const [scannedData,setScannedData] = useState(null)
+    const fileInputRef=useRef();
 
     const handleScan = async(decodedText) => {
       try{  
-        await axios.get("http://localhost:8080/api/getscannedgrocerybycode",{params:{code:parseInt(decodedText)}})
+        await axios.get(`${base_url}api/getscannedgrocerybycode`,{params:{code:parseInt(decodedText)}})
         .then((res)=>{
-        if(res && res.data){
           localStorage.setItem('code',decodedText)
+        if(res && res.data){
           setScannedData(null)
           setScannedData({name:res.data.name,qty:1})
+        } else{
+          setOpenAlert({isOpen:true,status:'warning', msg:'Item Not Found! Enter Item Name'})
         }
         })} catch(e){
           console.log(e)
@@ -46,15 +53,36 @@ export default function TextExtractor() {
 
     useEffect(()=>{
       scannedData && setOcr([scannedData,...ocr])
-    },[scannedData])
+    },[scannedData,prop])
 
   const handleClose = () => {
     setOpen(false);
   };
+
+  const switchStore = (textArray)=>{
+    let items = []
+    for(let i =0; i<textArray.length; i++){
+      let rows = textArray[i].split(' ')
+      const fuse = new Fuse(rows)
+      for(let j =0; j<rows.length; j++){
+        if(!(rows[j].indexOf(".") === -1) && fuse.search('coupon').length === 0 && fuse.search('@').length === 0){
+          if(textArray[i].match(/[a-zA-Z]+'?[a-zA-Z]+/g)){
+            let itemName = textArray[i].match(/[a-zA-Z]+'?[a-zA-Z]+/g).reduce((p,c)=> p + ' ' +c)
+            items.push({name:itemName,qty:1})
+          }
+          break
+        }
+        if(fuse.search('subtotal').length > 0){
+          return items
+        }
+      }
+    }
+    return items
+}
     const [videoConstraints,setVideoConstraints] = useState({
       width: 500,
       height: 600,
-      facingMode: "user"
+      facingMode: isMobile?"environment":"user"
     });
     const convertImageToText = async() => {
     const worker = await createWorker()
@@ -62,23 +90,13 @@ export default function TextExtractor() {
       const {
         data: { text },
       } = await worker.recognize(imageData);
-        const excludedItems =['TOTALS','SUBTOTALS','SAVINGS','COUPONS', 'TAX', 'CARDS',
-            'PAYS', 'PAYMENTS','CHECKOUTS', 'ACCOUNTS']
         if(text && text.length > 0){
             let itemArray = text.split('\n')
-            let filteredItem =[]
             let items = []
-            itemArray.forEach((item,i)=>{
-                /*let test = [...item.split(' ')].filter((itemI,i)=>
-                    excludedItems.includes(itemI.toUpperCase()) || excludedItems.includes(itemI.concat('S').toUpperCase()))*/
-                //if(test.length === 0 ){
-                    if(item.match(/[a-zA-Z]+'?[a-zA-Z]+/g)){
-                        let itemName = item.match(/[a-zA-Z]+'?[a-zA-Z]+/g).reduce((p,c)=> p + ' ' +c)
-                        items.push({name:itemName,qty:1})//lowercase to ckeck with db
-                        filteredItem.push([...itemName.split(' ')].map((item)=> `^${item[0]}.*[${item}].*${item[item.length-1]}$`))
-                    }
-               // }
-            })
+            /*const fuse = new Fuse([...itemArray[0].split(' ')])
+            const storeNames = ['target','costco','walmart','walgreens']
+            let storeName = storeNames.filter((s,i)=> fuse.search(s).length>0)*/
+            items = switchStore(itemArray);
             items.length > 0 ? mergeShoppingList(items,false) :isParsedItem(true)
         }
     };
@@ -91,7 +109,7 @@ export default function TextExtractor() {
     useEffect(() => {
       openAlert.isOpen && openAlert.isOpen === true && setTimeout(()=>{
         setOpenAlert({isOpen:false,status:'none', msg:''})
-      },2000)
+      },4000)
     }, [openAlert]);
 
     const mergeShoppingList = (items, isSaving) =>{
@@ -151,17 +169,14 @@ export default function TextExtractor() {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title" textAlign={'center'}>
-        <button onClick={capture} className="capture">Capture photo</button>
-        <button onClick={()=>handleClose()} className="capture">Cancel</button>
-        <button onClick={()=>{setVideoConstraints({...videoConstraints,facingMode:videoConstraints.facingMode==='user'?'environment':'user'})}} className="capture">Switch Camera</button>
-        </DialogTitle>
-        <DialogContent >
+        <DialogContent>
           <div className="container" style={{textAlign:'center'}}>
-            <Webcam ref={webcamRef}  screenshotFormat="image/png" videoConstraints = {videoConstraints}/>      
-        </div>
+            <Webcam ref={webcamRef}  screenshotFormat="image/png" videoConstraints = {videoConstraints}/>   
+          </div>
         </DialogContent>
-       
+        <div style={{textAlign:'center',marginBottom:'1vh'}} className="capture">
+        <Button onClick={capture}  size="small" variant="contained" >Capture</Button>
+        </div>
       </Dialog>
       )
       
@@ -176,7 +191,7 @@ export default function TextExtractor() {
       return new File([u8arr], filename, {type:mime});
   }
 
-    const header=[{id:'addicon',label:<AddIcon/>,maxWidth: 50,type:'icon'},
+    const header=[{id:'addicon',label:<Fab size="small" aria-label="add"><AddIcon /></Fab>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 170, type:"string"},
     {id:'qty',label:'Quantity',maxWidth: 50, type:"number"}]
 
@@ -202,15 +217,11 @@ export default function TextExtractor() {
       setOpenDialog(isOpen)
       setImageData(null)
       if(!isCancel){
-        if(ocr.length > 0){
+        if(ocr.length > 0 && (prop.userId !== '' || prop.userId !== null)){
           let ocrQuery = mergeShoppingList(ocr,true)
           try{  
-            await axios.post("http://localhost:8080/api/putusergrocery",{purchaseDate:purchaseDate,queryItems:ocrQuery}).then((res)=>{
-              if(new Date(purchaseDate).getTime() <= Date.now() &&
-              new Date(purchaseDate).getTime() >= Date.now()-24*6*3600*1000){
-                localStorage.removeItem('daterange')
-              }
-            
+            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:ocrQuery,userId:prop.userId}).then((res)=>{
+            localStorage.removeItem('details')
             setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
             })
           } catch(e){
@@ -241,73 +252,78 @@ export default function TextExtractor() {
     }
 
     return (
-      <div className="main" style={{display: 'flex',height:'95vh',flexDirection:'column',overflowY:'hidden'}}>
+      <div className="main" style={{display: 'flex',height:'80vh',flexDirection:'column',overflowY:'auto',marginTop:'2vh'}}>
       <BarcodeScanner handleScan={handleScan} openScanner={openScanner} setScanStatus={setScanStatus}/> 
       {
         open &&
         <CustomWebcam />
       }
-      <div  style={{display: 'flex',height:'85vh',flexDirection:'column'}}>
+      <div  style={{display: 'flex',height:'80vh',flexDirection:'column'}}>
       {     
         imageData != null && !parsedItem ?
         <LoadingSpinner  />  :
         <ItemTable shoppingList={ocr} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'presentList'}/>
-        }
-        </div>
-        <div className="listFooter" >
-            <div  className="file-upload">
-              <Tooltip title='Clear All' >
-              <p><ClearIcon size="large" style={{color:'white'}} onClick={()=>{
-                setOcr([])
-                setImageData(null)
-              }}/></p>
+        
+      }
+      <div style={{ width:'95vw',marginLeft:'auto',marginRight:'auto'}}>
+          {
+            openAlert.isOpen &&
+            <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
+          }
+      </div>
+      <div className="listFooter" >
+        <div  className="file-upload">
+            <Tooltip title='Clear List' enterTouchDelay={0}>
+            <Button size="small" variant="contained" onClick={()=>{
+            setOcr([])
+            setImageData(null)
+            }}><ClearIcon size="small"/>{!isMobile && 'Clear List'}</Button>
             </Tooltip>
-            </div>
-              <div  className="file-upload">
-                <Tooltip title='Upload from Device'>
-                <p><UploadIcon style={{color:'white'}}></UploadIcon></p>
-                <input
-                type="file"
-                id="file"
-                data-testid="file-upload"
-                onChange={handleImageChange}
-                accept="image/*"
-                hidden
-              />
-              </Tooltip>
-            </div>
-            <div className="camera">
-            <Tooltip title='Take a Picture'>
-              <p><PhotoCameraIcon style={{color:'white'}}></PhotoCameraIcon></p>     
-              <button onClick = {()=> setOpen(!open)} >
-              </button>
+          </div>
+          <div  className="file-upload">
+            <Tooltip title='Upload Image of Reciept from Device' enterTouchDelay={0}>
+            <Button size="small" variant="contained"
+            onClick={()=>fileInputRef.current.click()}>
+            <UploadIcon size="small">
+            </UploadIcon>
+            {!isMobile &&  'Device Upload'}
+            </Button>
+            <input
+            type="file"
+            id="file"
+            data-testid="file-upload"
+            onChange={handleImageChange}
+            ref={fileInputRef}
+            accept="image/*"
+            hidden
+            />
             </Tooltip>
-            </div>
-            <div className="camera">
-            <Tooltip title='Scan Barcode'>
-              <p><QrCodeScannerIcon style={{color:'white'}}></QrCodeScannerIcon></p>     
-              <button onClick = {()=>{
-                setOpenScanner(!openScanner)
-              }} >
-              </button>
+          </div>
+          <div className="camera">
+            <Tooltip title='Take a Picture of Reciept' enterTouchDelay={0}>
+              <Button size="small" variant="contained" onClick = {()=> setOpen(!open)}>    
+              <PhotoCameraIcon size="small"></PhotoCameraIcon> 
+              {!isMobile && 'Capture Photo'}</Button>
             </Tooltip>
-            </div>
-            <div className="file-upload">
-            <Tooltip title='Add to Inventory'>
-              <p><SaveIcon style={{color:'white'}} onClick={()=>{
+          </div>
+          <div className="camera">
+            <Tooltip title='Scan Barcode' enterTouchDelay={0}>
+              <Button size="small" variant="contained"  onClick = {()=> setOpenScanner(!openScanner)}>
+              <QrCodeScannerIcon size="small"></QrCodeScannerIcon>{!isMobile && 'Scan Barcode'}</Button>  
+            </Tooltip>
+          </div>
+          <div className="file-upload">
+            <Tooltip title='Add to Inventory' enterTouchDelay={0}>
+              <Button size="small"  variant="contained"  onClick={()=>{
                 setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
-                setOpenDialog(true)
-              }}/></p>
+                prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
+              }}>
+              <SaveIcon size="small"/>{!isMobile && 'Save Inventory'}</Button>
             </Tooltip>
-            </div>
+          </div>
+        </div>
         </div>
         <SimpleDialog openDialog ={openDialog} itemList={ocr} type = {'date'} setDialog={setDialog}></SimpleDialog>
-        <div style={{marginTop:'-7vh'}}>
-        {
-          openAlert.isOpen &&
-          <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
-        }
-        </div>
       </div>
     );
   }

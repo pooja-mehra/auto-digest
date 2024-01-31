@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import {Html5QrcodeScanner,Html5QrcodeScanType} from 'html5-qrcode';
+import {isMobile} from 'react-device-detect';
 
 const BarCodeScanner = (props) => {
     const scannerRef = useRef(null);
@@ -10,7 +11,7 @@ const BarCodeScanner = (props) => {
             props.handleScan(decodedText)
             setTimeout(()=>{
                 localStorage.removeItem('code')
-              },2000)
+            },4000)
         }
     }
 
@@ -31,8 +32,8 @@ const BarCodeScanner = (props) => {
     const handleStartScan = () => {
         const html5QrCode = new Html5QrcodeScanner(
             'scanner',
-            { fps: 10, qrbox: {height:200,width:400},
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
+            { fps: 10, qrbox: {height:250,width:350},
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]},
             );
             html5QrCode.render(onScanSuccess);
 
