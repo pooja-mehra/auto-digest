@@ -2,7 +2,6 @@
   "name": "template-ai",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:8080",
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -47,13 +46,14 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "server": "env-cmd -f .env.development node server.js",
+    "server-prod": "env-cmd -f .env.production node server.js",
     "start": "env-cmd -f .env.development react-scripts start",
     "start-prod": "env-cmd -f .env.production react-scripts start",
-    "build": "react-scripts build",
+    "build": "env-cmd -f .env.development react-scripts build",
+    "build-prod":"env-cmd -f .env.production react-scripts build",
     "test": "react-scripts test --coverage",
-    "eject": "react-scripts eject",
-    "server": "env-cmd -f .env.development node server.js",
-    "server-prod": "env-cmd -f .env.production node server.js"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
