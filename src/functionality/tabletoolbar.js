@@ -1,4 +1,3 @@
-import Toolbar from '@mui/material/Toolbar';
 import TextField from '@mui/material/TextField';
 import { useState, useEffect } from 'react';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
@@ -20,8 +19,11 @@ export default function TableToolbar(props){
         setListItems(items)
     },[listName,items])
 
+    const deleteList =(option) =>{
+      props.deleteList(option)
+    }
     return(
-        <Toolbar> 
+        <div style={{width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
         <Autocomplete
         value={title}
         getOptionDisabled={(option) => listNames.includes(option) && disable}
@@ -76,7 +78,7 @@ export default function TableToolbar(props){
         renderOption={ (props, option) => 
             <ListItem {...props} key={option} component="div" 
                 secondaryAction={
-                    <IconButton edge="end" aria-label="delete">
+                    <IconButton edge="end" aria-label="delete" onClick={()=>deleteList(option)}>
                       <DeleteIcon />
                     </IconButton>
                 }
@@ -97,6 +99,6 @@ export default function TableToolbar(props){
             }}}/>
         )}
       />
-        </Toolbar>
+        </div>
     )
 }

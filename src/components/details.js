@@ -5,8 +5,11 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 import SimpleDialog from '../functionality/simpleDialog';
+import Alert from '@mui/material/Alert';
+const base_url = process.env.REACT_APP_BASE_URL
 
-export default function Details() {
+export default function Details(prop) {
+    const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
     const [openDialog, setOpenDialog] = useState(false);
     const [details,setDetails] = useState(() => {
         const storedData = localStorage.getItem('details');
@@ -17,31 +20,37 @@ export default function Details() {
         return storedData ? JSON.parse(storedData) : null;
       });
     const [item =new Map(),setItem] = useState()
+
     useEffect(()=>{
-        if(dateRange === null || details === null){
+        if(details === null && prop.userId !== '' && prop.userId !== null){
             getUserGrocery(null)
-        } //else{
-            if(item && item.size >0 && details && details.length>0 ){
-                let values = Object.keys([...item.values()][0])
-                if(details.filter((d,i)=>values.includes(d.name)).length > 0){
-                    Object.keys([...item.values()][0]).forEach((value,i)=>{
-                        alterItems(value,values)                
-                    })
-                    let value = [...item.values()]
-                    let keys = [...item.keys()]
-                    value.filter((v,index)=>{
-                        if(Object.values(v).reduce((a,b)=> {return a+b}) === 0){
-                            item.delete(keys[index])
-                            setItem(new Map(item))
-                        }})
-                } else{
-                    setItem(new Map())
-                }
-            }else{
-            setItem(new Map())
         }
-        //}
-    },[dateRange])
+        if(item && item.size >0 && details && details.length>0 ){
+            let values = Object.keys([...item.values()][0])
+            if(details.filter((d,i)=>values.includes(d.name)).length > 0){
+                Object.keys([...item.values()][0]).forEach((value,i)=>{
+                    alterItems(value,values)                
+                })
+                let value = [...item.values()]
+                let keys = [...item.keys()]
+                value.filter((v,index)=>{
+                if(Object.values(v).reduce((a,b)=> {return a+b}) === 0){
+                    item.delete(keys[index])
+                    setItem(new Map(item))
+                }})
+            } else{
+                setItem(new Map())
+            }
+        }else{
+            setItem(new Map())
+    }
+    },[dateRange,prop])
+
+    useEffect(()=>{
+        openAlert.isOpen && openAlert.isOpen === true && setTimeout(()=>{
+          setOpenAlert({isOpen:false,status:'none',msg:''})
+        },4000)
+    },[openAlert])
 
     const data = (itemIndex) =>{
         const maxLength = Math.max(...details.map(arr => arr.count));
@@ -140,15 +149,19 @@ const getData =() =>{
     }
 
    const getUserGrocery = async(dateRange) =>{
-    if(dateRange == null || details === null){
+    if(details === null){
         try{
-            await axios.get("http://localhost:8080/api/getallusergrocery",{params:{page:0,rowsPerPage:0}}).then((res)=>{
+            await axios.get(`${base_url}api/getallusergrocery`,{headers: {
+                Authorization: `Bearer ${prop.userId}`,
+                Accept: 'application/json'
+            }}).then((res)=>{
             if(res && res.data.length > 0){
                 localStorage.setItem('details',JSON.stringify(res.data))
                 setDetails(res.data)
             } else{
-                localStorage.removeItem('details')
-                setDetails(null)
+                localStorage.setItem('details',[])
+                setDetails([])
+                setOpenAlert({isOpen:true,status:'error',msg:'No Details Found!'})
             }
             })
         } catch(e){
@@ -157,10 +170,11 @@ const getData =() =>{
         dateRange && localStorage.removeItem('daterange')
         setDateRange(null)
     }else{
-        localStorage.getItem('details') && setDetails(JSON.parse(localStorage.getItem('details')).map((item,index)=> 
+        localStorage.getItem('details') && localStorage.getItem('details').length >0  ? setDetails(JSON.parse(localStorage.getItem('details')).map((item,index)=> 
         ({count:item.count,name:item.name,qty:item.qty,details:item.details.filter((d,i)=>
             new Date(d.purchaseDate) >= new Date(dateRange.startDate) && 
-            new Date(d.purchaseDate) <= new Date(dateRange.endDate))})).filter((m,i)=> m.details.length>0))
+            new Date(d.purchaseDate) <= new Date(dateRange.endDate))})).filter((m,i)=> m.details.length>0)) :
+            setOpenAlert({isOpen:true,status:'error',msg:'No Details Found!'})
         localStorage.setItem('daterange',JSON.stringify({startDate:dateRange.startDate,endDate:dateRange.endDate}))
         setDateRange({startDate:dateRange.startDate,endDate:dateRange.endDate})
     }
@@ -170,33 +184,31 @@ const getData =() =>{
         setOpenDialog(isOpen)
         if(!isCancel){
             await getUserGrocery({startDate:purchaseDaterange.startDate,endDate:purchaseDaterange.endDate})
-        }
+        }  
     }
 
     return (
         <div className="main" >
-        <div className='parent'>
-        <div className="listHeader">
-        {
-            (details !== null || (details && details.length >0)) &&
-            <div style={{display:'flex'}}>
-            <Autocomplete
-            multiple
-            limitTags={2}
-            id="combo-box-demo"
-            options={details.map((d,i)=>d.name)}
-            getOptionLabel={(option) => option}
-            onChange={(e,v,r)=>handleChange(e,v,r)}
-            sx={{width:'50vw'}}
-            value={item.size>0?Object.keys([...item.values()][0]):[]}
-            renderInput={(params) => <TextField {...params}  label="Item name"/>}
-        />
-        </div>
-    
-        }
-        <Button size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} 
-        onClick={()=>setOpenDialog(true)}> Purchase Date</Button>
-        </div>
+            <div className="listHeader">
+            {
+                (details !== null || (details && details.length >0)) &&
+                <div style={{display:'flex'}}>
+                <Autocomplete
+                multiple
+                limitTags={2}
+                id="combo-box-demo"
+                options={details.map((d,i)=>d.name)}
+                getOptionLabel={(option) => option}
+                onChange={(e,v,r)=>handleChange(e,v,r)}
+                sx={{width:'50vw'}}
+                value={item.size>0?Object.keys([...item.values()][0]):[]}
+                renderInput={(params) => <TextField {...params}  label="Select Item"/>}
+            />
+            </div>
+            }
+            <Button size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} 
+            onClick={()=>{ prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
+            }}> Purchase Date</Button>
         </div>
         <div style={{maxWidth:'100vw', width:'auto', maxHeight:'50vh', height:'auto',marginTop:'2vh'}} >
         {
@@ -209,6 +221,9 @@ const getData =() =>{
                 legend: {
                  hidden:true
                 },
+                /*bar: { 
+                    onClick: (event) => {console.log(event)} 
+                }*/
               }}
             yAxis={[{label:'Total Quantity'}]}
             xAxis={[{ scaleType: 'band', dataset:details,
@@ -234,8 +249,16 @@ const getData =() =>{
         valueFormatter:(value)=>{
             return(new Date(value).toLocaleDateString('en-us'))},label:dateRange === null ? '' : '(Date Range: '+ new Date(dateRange.startDate).toLocaleDateString('en-us') +' - '+ new Date(dateRange.endDate).toLocaleDateString('en-us')+ ' )' }]}
         />}
+        {
+            openAlert.isOpen &&
+            <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
+              
+        }
         </div>
-        <SimpleDialog openDialog ={openDialog} type={'daterange'} setDialog={setDialog}></SimpleDialog>
+        
+        {
+            <SimpleDialog openDialog ={openDialog} type={'daterange'} setDialog={setDialog}></SimpleDialog>
+        }
         </div>
     );
 }

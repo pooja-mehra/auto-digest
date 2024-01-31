@@ -1,18 +1,22 @@
 import "./shoppinglist.css";
 import ItemTable from '../functionality/itemTable';
 import AddIcon from '@mui/icons-material/Add';
-import { useEffect, useState } from 'react';
+import { useEffect, useState} from 'react';
 import axios from 'axios';
 import SimpleDialog from '../functionality/simpleDialog'
 import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
 import ClearIcon from '@mui/icons-material/Clear';
 import Tooltip from '@mui/material/Tooltip';
 import DoneOutlineIcon from '@mui/icons-material/DoneOutline';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import TableToolbar from '../functionality/tabletoolbar';
+import Fab from '@mui/material/Fab';
+import Button from '@mui/material/Button';
+import {isMobile} from 'react-device-detect';
+import SaveIcon from '@mui/icons-material/Save';
+const base_url = process.env.REACT_APP_BASE_URL
 
-export default function ShoppingList() {
+export default function ShoppingList(prop) {
     const [shoppingList,setShoppingList] = useState(
       () => {
         const storedData = localStorage.getItem('shoppinglist');
@@ -29,7 +33,7 @@ export default function ShoppingList() {
     const [details, setDetails]  = useState(null)
     const [consumed,setConsumed] = useState({used:0,left:0})
     
-    const header=[{id:'addicon',label:<AddIcon/>,maxWidth: 50,type:'icon'},
+    const header=[{id:'addicon',label:<Fab size="small" aria-label="add"><AddIcon /></Fab>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 50, type:"string"},
     {id:'qty',label:'Quantity',minWidth: 50, type:"number"}]
 
@@ -41,9 +45,9 @@ export default function ShoppingList() {
     {id:'details',label:'',minWidth: 50}]
 
     useEffect(()=>{
-      getAllUserGrocery(localStorage.getItem('details')?JSON.parse(localStorage.getItem('details')):null)
-      details && setConsumed({used:details.used?details.used:0,left:details.used?details.qty-details.used:details.qty})
-    },[details])
+        getAllUserGrocery(localStorage.getItem('details')?JSON.parse(localStorage.getItem('details')):null)
+        details && setConsumed({used:details.used?details.used:0,left:details.used?details.qty-details.used:details.qty})
+    },[details,prop])
 
     useEffect(()=>{
       openAlert.isOpen && openAlert.isOpen === true && setTimeout(()=>{
@@ -60,13 +64,16 @@ export default function ShoppingList() {
     },[shoppingList])
 
     useEffect(()=>{
-      shoppingListNames.length === 0 && getUserShoppingListNames()
+      shoppingListNames.length === 0 && prop.userId !== '' && prop.userId !== null && getUserShoppingListNames()
     })
 
     const getAllUserGrocery = async(details) =>{
-     if(details === null){
+     if(details === null && prop.userId !== '' && prop.userId !== null){
         try{
-          await axios.get("http://localhost:8080/api/getallusergrocery",).then((res)=>{
+          await axios.get(`${base_url}api/getallusergrocery`,{headers: {
+            Authorization: `Bearer ${prop.userId}`,
+            Accept: 'application/json'
+        }}).then((res)=>{
           if(res && res.data.length > 0){
             details = res.data
             localStorage.setItem('details',JSON.stringify(details))
@@ -152,20 +159,20 @@ export default function ShoppingList() {
     }
 
     const setDialog = async (isOpen, isCancel, purchaseDate) =>{
+      if(prop && prop.userId !== null && prop.userId !== ''){
       setOpenDialog(isOpen)
       if(!isCancel){
         if(shoppingList.items.length > 0){
           let shoppingListQuery = mergeShoppingList(shoppingList.items)
+          if(shoppingList.listName !== ''){
+            setUserShoppingList()
+          }
           try{  
-            await axios.post("http://localhost:8080/api/putusergrocery",{purchaseDate:purchaseDate,queryItems:shoppingListQuery}).then((res)=>{
+            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:shoppingListQuery,userId:prop.userId}).then((res)=>{
               getAllUserGrocery(null)
-              /*if(new Date(purchaseDate).getTime() <= Date.now() &&
-              new Date(purchaseDate).getTime() >= Date.now()-30*24*3600*1000){
-                localStorage.removeItem('details')
-              }*/
-            setShoppingList({listName:'',items:[]}) 
-            localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
-            setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
+              setShoppingList({listName:'',items:[]}) 
+              localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+              setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
             })
           } catch(e){
             console.log(e)
@@ -173,6 +180,8 @@ export default function ShoppingList() {
         } else{
           setOpenAlert({isOpen:true,status:'error',msg:'No Items to Add'})
         }
+      }} else{
+        setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
       }
     }
     const getDetails = (name) =>{
@@ -181,7 +190,7 @@ export default function ShoppingList() {
         data && data.length > 0 && setDetails(data[0])
       } else{
         setDetails(null)
-        getAllUserGrocery(null)
+        prop && prop.userId !== null && prop.userId !== '' && getAllUserGrocery(null)
       }
     }
 
@@ -190,18 +199,21 @@ export default function ShoppingList() {
     }
 
     const updateItem = async() =>{
-      const itemName = details.name
-      try{
-        await axios.post('http://localhost:8080/api/updateusergrocerybyname',{name:details.name,used:consumed.used}).then((res)=>{
-          if(res && res.status === 200){
-            getAllUserGrocery(null)
-            setOpenAlert({isOpen:true,status:'success',msg:`Successfully updated item: ${itemName}`})
-          }
-        })
-        
-      } catch(e){
-        console.log(e)
-        setOpenAlert({isOpen:false,status:'error',msg:`Failed to updated item: ${itemName}`})
+      if(prop && prop.userId !== null && prop.userId !== ''){ 
+        const itemName = details.name
+        try{
+          await axios.post(`${base_url}api/updateusergrocerybyname`,{name:details.name,used:consumed.used,userId:prop.userId}).then((res)=>{
+            if(res && res.status === 200){
+                getAllUserGrocery(null)
+                setOpenAlert({isOpen:true,status:'success',msg:`Successfully updated item: ${itemName}`})
+            }
+          })
+        } catch(e){
+          console.log(e)
+          setOpenAlert({isOpen:false,status:'error',msg:`Failed to updated item: ${itemName}`})
+        }
+      }else{
+        setOpenAlert({isOpen:false,status:'error',msg:'Please SIGNIN to proceed'})
       }
        
     }
@@ -209,10 +221,11 @@ export default function ShoppingList() {
     const setUserShoppingList = async () =>{
       const filteredShoppingList = shoppingList.items.filter((item,index)=>item.name !== '')   
       const listName = shoppingList.listName.replace(/[^a-zA-Z ]/g,"").replace(/^\s+|\s+$/g, "")
-      if(filteredShoppingList && filteredShoppingList.length>0 && listName && listName !== ''){
+      if(filteredShoppingList && filteredShoppingList.length>0 && listName && listName !== '' && prop.userId !== null && prop.userId !== ''){
         let shoppingListQuery = mergeShoppingList(filteredShoppingList)
         try{  
-          await axios.post("http://localhost:8080/api/putusershoppinglist",{listName:shoppingList.listName,queryItems:shoppingListQuery})
+          await axios.post(`${base_url}api/putusershoppinglist`,
+          {listName:shoppingList.listName,queryItems:shoppingListQuery,userId:prop.userId})
           .then((res)=>{
           localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
           setShoppingList({listName:'',items:[]}) 
@@ -224,6 +237,7 @@ export default function ShoppingList() {
         }
       }else{
         filteredShoppingList.length > 0 && listName === '' && setOpenAlert({isOpen:true,status:'error',msg:'Provide Title to Current List'})
+        prop.userId === null || prop.userId === '' && setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
         if(filteredShoppingList.length === 0 ){
           localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
           setShoppingList({listName:'',items:[]}) 
@@ -235,7 +249,10 @@ export default function ShoppingList() {
 
     const getUserShoppingListNames = async(details) =>{
       try{
-          await axios.get("http://localhost:8080/api/getusershoppinglistnames").then((res)=>{
+          await axios.get(`${base_url}api/getusershoppinglistnames`,{headers: {
+            Authorization: `Bearer ${prop.userId}`,
+            Accept: 'application/json'
+        }}).then((res)=>{
            if(res && res.data.length > 0){
              const shoppingListNames = res.data.map((d,i)=>d.listName)
              localStorage.setItem('shoppinglistnames',JSON.stringify(shoppingListNames))
@@ -256,25 +273,49 @@ export default function ShoppingList() {
     }
 
     const getShoppingListByName = async(listName) =>{
-      try{
-        await axios.get("http://localhost:8080/api/getshoppinglistbyname",{params:{listName:listName}}).then((res)=>{
-         if(res && res.data){
-           localStorage.setItem('shoppinglist',JSON.stringify({listName:listName,items:[...res.data.items]}))
-           setShoppingList({listName:listName,items:[...res.data.items]})
-         } 
-         })
-       } catch(e){
-         console.log(e)
-      } 
+      if(prop.userId !== '' && prop.userId !== null){
+        try{
+          await axios.get(`${base_url}api/getshoppinglistbyname`,{params:{listName:listName},
+          headers: {
+            Authorization: `Bearer ${prop.userId}`,
+            Accept: 'application/json'
+          }}).then((res)=>{
+           if(res && res.data){
+             localStorage.setItem('shoppinglist',JSON.stringify({listName:listName,items:[...res.data.items]}))
+             setShoppingList({listName:listName,items:[...res.data.items]})
+           } 
+           })
+         } catch(e){
+           console.log(e)
+        } 
+      } else{
+        setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
+      }
+    }
+
+    const deleteList = async (option) =>{
+      if(prop.userId !== '' && prop.userId !== null){
+        try{
+          await axios.delete(`${base_url}api/deleteshoppinglistbyname`,{ params: { listName: option }, 
+          headers: { Authorization: `Bearer ${prop.userId}`,Accept: 'application/json'} })
+          .then(function (res) {
+            if(res && res.data && res.data.deletedCount === 1){
+              const names = shoppingListNames.filter((name) => name !== option)
+              setShoppingListNames(names)
+              localStorage.setItem('shoppinglistnames',JSON.stringify(names))
+            }  
+        })
+        } catch(e){
+          console.log(e)
+        }
+      }
     }
 
     return(
-        <div className="main" style={{display: 'flex',height:'90vh', flexDirection:'column'}}>
+        <div className="main" style={{display: 'flex',height:'80vh', flexDirection:'column'}}>
         <div className="layout" >
-        <div className="listnames">
         <TableToolbar listName={shoppingList.listName} items = {shoppingList.items} setShoppingListTitle={setShoppingListTitle} 
-        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName}></TableToolbar>
-        </div>
+        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList}></TableToolbar>
         <div className='presentlist'>
         <ItemTable shoppingList={shoppingList.items} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'shoppingList'}/>
         <div style={{width:'95%'}}>
@@ -284,28 +325,27 @@ export default function ShoppingList() {
         }
           <div className='shoppinglistFooter'>
           <div  className="shoppingfile-upload">
-                <Tooltip title='Create New List' >
-                <p><AddBoxIcon size="large" style={{color:'white'}} onClick={()=>{
+                <Tooltip title='Save Shopping List' enterTouchDelay={0}>
+                <Button size="small" variant="contained" onClick={()=>{
                   setUserShoppingList()
-                }}/></p>
+                }}><AddBoxIcon size="small"/>{!isMobile && 'Save Shopping List'}</Button>
+                
               </Tooltip>
             </div>
             <div  className="shoppingfile-upload">
-                <Tooltip title='Clear All' >
-                <p><ClearIcon size="large" style={{color:'white'}} onClick={()=>{
+                <Tooltip title='Clear List' enterTouchDelay={0}>
+                <Button size="small"  variant="contained" onClick={()=>{
                   localStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
                   setShoppingList({...shoppingList,items:[]})
-                }}/></p>
+                }}><ClearIcon size="small"/>{!isMobile && 'Clear List'}</Button>
               </Tooltip>
             </div>
             <div className='shoppingfile-upload'>
-              <Tooltip title='Save to Inventory' >
-              <p>
-              <DoneOutlineIcon style={{color:'white'}} onClick={()=>{
+              <Tooltip title='Save Inventory' enterTouchDelay={0}>
+              <Button size="small" variant="contained" onClick={()=>{
                 setShoppingList({...shoppingList,items:shoppingList.items.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0)})
-                setOpenDialog(true)
-              }}/>
-              </p>
+                prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
+              }}><SaveIcon size="small"/>{!isMobile && 'Save Inventory'}</Button>
               </Tooltip>
             </div>
             </div>
@@ -313,15 +353,11 @@ export default function ShoppingList() {
         </div>
         </div>
         <div className="pastlist">
-        <div style={{marginTop:'1vh'}}>
-            <Chip label='Past Purchase' color="success" size="medium"></Chip>
-        </div>
           <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
           changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
           header={shoppedHeader}/>
         </div>
         <SimpleDialog openDialog ={openDialog} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
         </div>
-        
     )
 }

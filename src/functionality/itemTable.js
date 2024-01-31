@@ -15,6 +15,8 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
+import Fab from '@mui/material/Fab';
+import SaveIcon from '@mui/icons-material/Save';
 
 export default function ItemTable(props) {
   const {shoppingList,type,details,consumed} = props
@@ -51,7 +53,7 @@ export default function ItemTable(props) {
                     props.addItem({name:'',qty:1},page,rowsPerPage)
                   }}}
                 >
-                <Tooltip title={column.id === 'addicon'?'Add Item':''}>
+                <Tooltip title={column.id === 'addicon'?'Add Item':''} enterTouchDelay={0}>
                   {column.label}
                 </Tooltip>
                 </TableCell>
@@ -69,31 +71,31 @@ export default function ItemTable(props) {
                       const value = row[column.id]
                       return (
                         column.id === 'none' ?  <TableCell key={column.id+(i+page * rowsPerPage)}>
-                        <Tooltip title='Add Item to Shopping List'>
-                        <AddIcon onClick={()=>{
+                        <Tooltip title='Add Item to Shopping List' enterTouchDelay={0}>
+                        <Fab size="small" aria-label="add"><AddIcon onClick={()=>{
                           props.addItem(row, page, rowsPerPage)
-                        }}/>
+                        }}/></Fab>
                         </Tooltip>
                         </TableCell>: column.id === 'addicon'?
                         <TableCell key={column.id+(i+page * rowsPerPage)}>
-                        <Tooltip title='Delete Item'>
-                        <DeleteIcon onClick={()=>{
+                        <Tooltip title='Delete Item' enterTouchDelay={0}>
+                        <Fab size="small" aria-label="add"><DeleteIcon onClick={()=>{
                           if(column.id === 'addicon'){
                             props.deleteItem(i,page,rowsPerPage)
                           }
-                        }}/>
+                        }}/></Fab>
                         </Tooltip>
                         </TableCell>
                         :column.id==='details'? <TableCell key={column.id+(i+page * rowsPerPage)}>
                         {
                           open.isOpen?
-                          <KeyboardArrowUpIcon onClick={()=>{
+                          <Fab size="small" aria-label="add"><KeyboardArrowUpIcon onClick={()=>{
                             setOpen({isOpen:!open.isOpen,id:(i+(page*rowsPerPage))})
-                          }}/> :
-                          <KeyboardArrowDownIcon onClick={()=>{
+                          }}/></Fab> :
+                          <Fab size="small" aria-label="add"><KeyboardArrowDownIcon onClick={()=>{
                             props.getDetails(row.name)
                             setOpen({isOpen:!open.isOpen,id:(i+(page*rowsPerPage))})
-                          }}/>
+                          }}/></Fab>
                         }
                         </TableCell>:
                         <TableCell id = {column.id+(i+page * rowsPerPage)} key={column.id+(i+page * rowsPerPage)} contentEditable={(props.type === 'presentList' || props.type === 'shoppingList') && column.id !== 'addicon'} 
@@ -119,9 +121,9 @@ export default function ItemTable(props) {
                   {
                     props.type === 'pastList' &&
                     <TableRow>
-                    <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                    <TableCell style={{ paddingBottom: 0, paddingTop: 0, margin:'auto',textAlign:'right'}} colSpan={6}>
                       <Collapse in={open.isOpen && open.id === (i+(page*rowsPerPage))} timeout="auto" unmountOnExit>
-                          <Table size="small" aria-label="purchases" style={{backgroundColor:'beige'}}>
+                          <Table size="small" style={{margin:'auto', border:'solid', width:'50%'}} >
                             <TableHead>
                               <TableRow>
                                 <TableCell>Purchase Date</TableCell>
@@ -145,30 +147,24 @@ export default function ItemTable(props) {
                                 })
                               }
                               <TableRow>
-                              <Table size={'small'} style={{backgroundColor:'lightgrey'}}>
-                              <TableRow>
-                              <TableCell>purchased:</TableCell>
-                              <TableCell >{details?details.qty:0}</TableCell>
-                              <TableCell>Used:</TableCell>
-                              <TableCell id={'used'+(i+(page*rowsPerPage))} contentEditable ={true} suppressContentEditableWarning={true}
-                              onKeyUp={(e)=>{
-                                if( e.key.match(/[^0-9]/) && e.key !== 'Backspace'){
-                                  e.preventDefault()
-                                } else{
-                                  parseInt(e.target.innerText) > 0 && parseInt(e.target.innerText) <= details.qty && e.target.innerText !== '' && 
-                                  props.changeDetails(parseInt(e.target.innerText),details.qty - parseInt(e.target.innerText))
-                                }
-                              }}
-                              onMouseOver={()=>open.isOpen && open.id === (i+(page*rowsPerPage)) && HandleMouseOver('used'+(i+(page*rowsPerPage)))} 
-                              >{consumed?consumed.used:0}
+                              <Table size="small" style={{paddingBottom: 0, paddingTop: 0,backgroundColor:'#482880', marginLeft:'10%'}}>
+                              <TableRow >
+                              <TableCell style={{color:'white',backgroundColor:'#673ab7',}}>purchased:</TableCell>
+                              <TableCell style={{color:'white'}}>{details?details.qty:0}
                               </TableCell>
-                              <TableCell>Left:</TableCell>
-                              <TableCell>{consumed?consumed.left:details.qty}
+                              <TableCell style={{color:'white',backgroundColor:'#673ab7',}}>Used:</TableCell>
+                              <TableCell style={{color:'white'}} id={'used'+(i+(page*rowsPerPage))} contentEditable ={true} suppressContentEditableWarning={true}
+                              ><input type="number" min ="0" max={details && details.qty} value={consumed?consumed.used:0} onChange={(e)=>{
+                                props.changeDetails(parseInt(e.target.value),details.qty - parseInt(e.target.value))}}/>
                               </TableCell>
-                              <TableCell><Button onClick={()=> {
+                              <TableCell style={{backgroundColor:'#673ab7',color:'white'}}>Left:</TableCell>
+                              <TableCell style={{color:'white'}}>{consumed?consumed.left:details.qty}
+                              </TableCell>
+                              <TableCell><Button size="small" style={{backgroundColor:'#673ab7', color:'white', marginTop:'-0.5vh', marginBottom:'-0.5vh'}} 
+                              variant="contained" onClick={()=> {
                                   props.updateItem()
                                   setOpen({isOpen:false,id:-1})
-                                }}>Save</Button>
+                                }}><SaveIcon size="small"></SaveIcon >Save</Button>
                               </TableCell>
                               </TableRow>
                               </Table>

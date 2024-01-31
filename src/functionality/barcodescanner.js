@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import {Html5QrcodeScanner,Html5QrcodeScanType} from 'html5-qrcode';
+import {isMobile} from 'react-device-detect';
 
 const BarCodeScanner = (props) => {
     const scannerRef = useRef(null);
@@ -33,6 +34,7 @@ const BarCodeScanner = (props) => {
             'scanner',
             { fps: 10, qrbox: {height:200,width:400},
             supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
+            {facingMode: { exact: isMobile?"environment":"user"}}
             );
             html5QrCode.render(onScanSuccess);
 

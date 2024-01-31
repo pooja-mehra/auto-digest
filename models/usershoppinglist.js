@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const ObjectId = mongoose.Types.ObjectId;
 const Schema = mongoose.Schema;
 
 const detailsSchema = new Schema({
@@ -14,6 +15,10 @@ const detailsSchema = new Schema({
 })
 
 const usershoppingSchema = new Schema({
+    userId:{
+        type:ObjectId,
+        required: true
+    },
     listName: {
         type: String,
         required: true,
