@@ -315,7 +315,7 @@ export default function TextExtractor(prop) {
           </div>
           <div className="file-upload">
             <Tooltip title='Add to Inventory' enterTouchDelay={0}>
-              <Button size="small" style={{backgroundColor:'#673ab7', color:'white'}} variant="contained"  onClick={()=>{
+              <Button size="small"  variant="contained"  onClick={()=>{
                 setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
                 prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
               }}>

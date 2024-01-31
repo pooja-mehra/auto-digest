@@ -39,6 +39,10 @@
       background-color:#673ab7;
       color:white;
   }
+
+  .shoppinglistFooter Button:hover{
+    background-color:#6314ed;
+  }
   
 .shoppingfile-upload {
     position: relative;

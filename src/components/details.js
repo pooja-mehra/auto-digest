@@ -159,8 +159,7 @@ const getData =() =>{
                 localStorage.setItem('details',JSON.stringify(res.data))
                 setDetails(res.data)
             } else{
-                localStorage.setItem('details',[])
-                setDetails([])
+                localStorage.setItem('details',JSON.stringify([]))
                 setOpenAlert({isOpen:true,status:'error',msg:'No Details Found!'})
             }
             })
