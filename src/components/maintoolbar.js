@@ -25,7 +25,9 @@ export default function MainToolabr(props){
       .then((res) => {
         if(res && res.data && res.data.email){
           confirmUser(res.data.email,res.data.picture)
+          alert('confirm')
         } else{
+          alert('fail')
           console.log('Invalid Google Account')
         }
       })
