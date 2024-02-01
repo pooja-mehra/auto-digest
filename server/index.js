@@ -9,11 +9,21 @@ const ScannedGroceries = require('./models/scannedgroceries')
 require('dotenv').config();
 const app = express();
 const db_url = process.env.DB_URL
+var test = 'fail'
 
 mongoose
     .connect(db_url, { useNewUrlParser: true })
-    .then(() => console.log(`Database connected successfully`))
-    .catch((err) => console.log(err));
+    .then(() => {
+      console.log(`Database connected successfully`)
+      ScannedGroceries.findOne({code:30800807004}).then((data)=>{
+        test = 'pass'
+      })
+    })
+    .catch((err) => {
+      test = 'catch'
+      console.log(err)
+    }
+    );
 
 mongoose.Promise = global.Promise;
 
@@ -31,16 +41,7 @@ app.use('/api', routes);
 
 app.get('/', (req,res) => {
   res.header("Access-Control-Allow-Origin", "*");
-  try{
-    ScannedGroceries.findOne({code:30800807004}).then((data)=>{
-      console.log('in  '+db_url)
-      res.json({try:db_url})
-    })
-  }catch(e){
-    console.log('catch  '+db_url)
-    res.json({catch:db_url})
-  }
-  res.json({catch:db_url})
+  res.json({catch:test})
 });
 
 const port = 8080;
