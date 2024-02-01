@@ -30,6 +30,7 @@ app.options('*', cors());
 app.use('/api', routes);
 
 app.get('/', (req,res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   ScannedGroceries.findOne({code:30800807004}).then((data)=>{
     res.json(data)
   })

@@ -25,7 +25,12 @@ export default function App() {
   
   const handleScan = async() => {
     try{  
-      await axios.get(base_url)
+      await axios.get({
+        method: 'get',
+        url: base_url,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        }})
       .then((res)=>{
         console.log(res)
       })} catch(e){
