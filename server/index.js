@@ -3,6 +3,8 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const routes = require('./routes/api');
+const ScannedGroceries = require('./models/scannedgroceries')
+
 
 require('dotenv').config();
 const app = express();
@@ -28,7 +30,9 @@ app.options('*', cors());
 app.use('/api', routes);
 
 app.get('/', (req,res) => {
-  res.json({status:'success'})
+  ScannedGroceries.findOne({code:30800807004}).then((data)=>{
+    res.json(data)
+  })
 });
 
 const port = 8080;
