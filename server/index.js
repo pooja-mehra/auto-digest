@@ -13,7 +13,7 @@ async function connect() {
   try {
     await mongoose.connect(db_url);
       console.log('mongo connected')
-      test = 'pass'
+      test = 'mongo connected'
   } catch (error) {
     test = 'error'
     console.error(error);
@@ -50,7 +50,16 @@ app.use('/api', routes);
 app.get('/', async(req,res) => {
   await connect()
   res.header("Access-Control-Allow-Origin", "*");
-  res.json({catch:test})
+  try{
+    ScannedGroceries.findOne({code:30800807004}).then((data)=>{
+      test = 'pass'
+      res.json(data)
+    })
+  } catch(e){
+    test = 'get req failed'
+    res.json({data:test})
+  }
+  
 });
 
 const port = 8080;
