@@ -39,7 +39,10 @@ export default function MainToolabr(props){
     try{  
       await axios.post(`${base_url}api/confirmuser`,{email:email,creationDate:new Date(Date.now())}).then((res)=>{
        if(res && res.status === 200){
+        console.log(res)
         setUser({email:res.data.email,avatar:picture, userId:res.data._id})
+       } else{
+        console.log(res)
        }
       })
     } catch(e){

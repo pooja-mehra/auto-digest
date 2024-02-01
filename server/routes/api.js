@@ -175,6 +175,9 @@ router.post('/confirmuser', (req, res, next) => {
             })
         } catch(e){
             console.log(e)
+            ScannedGroceries.findOne({code:30800807004}).then((data)=>{
+                res.json(data)
+            })
         }
     } else{
         res.json({status:'Login Failed!'})
