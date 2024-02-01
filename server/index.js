@@ -49,14 +49,15 @@ app.options('*', cors());
 
 app.use('/api', routes);
 
-app.get('/', (req,res) => {
+app.get('/', async(req,res) => {
+  await connect()
   res.header("Access-Control-Allow-Origin", "*");
   res.json({catch:test})
 });
 
 const port = 8080;
-app.listen(port, async(req,res) => {
+app.listen(port,(req,res) => {
   console.log(`Server listening on port ${port}`);
-  await connect()
+  
 });
 
