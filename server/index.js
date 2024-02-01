@@ -6,7 +6,7 @@ const routes = require('./routes/api');
 const ScannedGroceries = require('./models/scannedgroceries')
 require('dotenv').config();
 const app = express();
-const db_url = process.env.DB_URL
+const db_url = process.env.MONGODB_URI
 var test = 'not connected'
 
 async function connect() {
