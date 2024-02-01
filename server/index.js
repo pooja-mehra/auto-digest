@@ -30,10 +30,19 @@ app.options('*', cors());
 app.use('/api', routes);
 
 app.get('/', (req,res) => {
+  req.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Origin", "*");
-  ScannedGroceries.findOne({code:30800807004}).then((data)=>{
-    res.json(data)
-  })
+  console.log('out  '+db_url)
+  try{
+    ScannedGroceries.findOne({code:30800807004}).then((data)=>{
+      console.log('in  '+db_url)
+      res.json(data)
+    })
+  }catch(e){
+    console.log('catch  '+db_url)
+    res.json({catch:db_url})
+  }
+  
 });
 
 const port = 8080;
