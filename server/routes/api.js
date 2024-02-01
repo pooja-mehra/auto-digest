@@ -167,13 +167,17 @@ router.get('/getscannedgrocerybycode', (req,res,next)=>{
 
 router.post('/confirmuser', (req, res, next) => {
     const {email, creationDate} = req.body
-    try{
-        UserAccount.findOneAndUpdate({email:email},{ $setOnInsert: { email: email, creationDate: creationDate } },
-        { upsert: true}).then((data)=>{
-            res.json(data)
-        })
-    } catch(e){
-        console.log(e)
+    if(email && email !== null && creationDate && creationDate !== null){
+        try{
+            UserAccount.findOneAndUpdate({email:email},{ $setOnInsert: { email: email, creationDate: creationDate } },
+            { upsert: true}).then((data)=>{
+                res.json(data)
+            })
+        } catch(e){
+            console.log(e)
+        }
+    } else{
+        res.json({status:'Login Failed!'})
     }
    
 })
