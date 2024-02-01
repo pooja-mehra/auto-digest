@@ -13,7 +13,6 @@ export default function App() {
     setUserId(user.userId)
   }
   useEffect(()=>{
-    handleScan()
     localStorage.removeItem('details')
     localStorage.removeItem('shoppinglist')
     localStorage.removeItem('shoppinglistnames')
@@ -23,21 +22,6 @@ export default function App() {
     UserContext = createContext(userId)
   },[userId])
   
-  const handleScan = async() => {
-    try{  
-      await axios.get({
-        method: 'get',
-        url: base_url,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        }})
-      .then((res)=>{
-        console.log(res)
-      })} catch(e){
-        console.log(e)
-        console.log(base_url)
-      }
-  };
   return (
     <div>
       <header>

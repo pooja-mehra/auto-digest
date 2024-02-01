@@ -19,21 +19,6 @@ async function connect() {
     console.error(error);
   }
 }
-/*mongoose
-    .connect(db_url, { useNewUrlParser: true })
-    .then(() => {
-      console.log(`Database connected successfully`)
-      ScannedGroceries.findOne({code:30800807004}).then((data)=>{
-        test = 'pass'
-      })
-    })
-    .catch((err) => {
-      test = 'catch'
-      console.log(err)
-    }
-    );
-
-mongoose.Promise = global.Promise;*/
 
 app.use(bodyParser.json());
 app.use(cors())
@@ -49,17 +34,7 @@ app.use('/api', routes);
 
 app.get('/', async(req,res) => {
   await connect()
-  res.header("Access-Control-Allow-Origin", "*");
-  try{
-    ScannedGroceries.findOne({code:30800807004}).then((data)=>{
-      test = 'pass'
-      res.json(data)
-    })
-  } catch(e){
-    test = 'get req failed'
-    res.json({data:test})
-  }
-  
+  res.json({data:test})
 });
 
 const port = 8080;
