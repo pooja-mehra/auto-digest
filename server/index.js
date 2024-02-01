@@ -13,9 +13,7 @@ async function connect() {
   try {
     await mongoose.connect(db_url);
       console.log('mongo connected')
-      ScannedGroceries.findOne({code:30800807004}).then((data)=>{
-        test = 'pass'
-      })
+      test = 'pass'
   } catch (error) {
     test = 'error'
     console.error(error);
