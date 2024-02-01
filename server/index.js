@@ -4,14 +4,24 @@ const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const routes = require('./routes/api');
 const ScannedGroceries = require('./models/scannedgroceries')
-
-
 require('dotenv').config();
 const app = express();
 const db_url = process.env.DB_URL
-var test = 'fail'
+var test = 'not connected'
 
-mongoose
+async function connect() {
+  try {
+    await mongoose.connect(db_url);
+      console.log('mongo connected')
+      ScannedGroceries.findOne({code:30800807004}).then((data)=>{
+        test = 'pass'
+      })
+  } catch (error) {
+    test = 'error'
+    console.error(error);
+  }
+}
+/*mongoose
     .connect(db_url, { useNewUrlParser: true })
     .then(() => {
       console.log(`Database connected successfully`)
@@ -25,7 +35,7 @@ mongoose
     }
     );
 
-mongoose.Promise = global.Promise;
+mongoose.Promise = global.Promise;*/
 
 app.use(bodyParser.json());
 app.use(cors())
@@ -45,7 +55,8 @@ app.get('/', (req,res) => {
 });
 
 const port = 8080;
-app.listen(port, (req,res) => {
+app.listen(port, async(req,res) => {
   console.log(`Server listening on port ${port}`);
+  await connect()
 });
 
