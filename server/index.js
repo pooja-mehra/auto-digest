@@ -3,43 +3,36 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const routes = require('./routes/api');
-const ScannedGroceries = require('./models/scannedgroceries')
 require('dotenv').config();
+var cookieParser = require('cookie-parser');
 const app = express();
 const db_url = process.env.MONGODB_URI
-var test = 'not connected'
+const client_url = process.env.REACT_APP_CLIENT_URL
+var status = 'fail'
 
 async function connect() {
   try {
     await mongoose.connect(db_url);
-      console.log('mongo connected')
-      test = 'mongo connected'
+    status = 'connected'
   } catch (error) {
-    test = 'error'
-    console.error(error);
+    status = 'error'
   }
 }
-
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(cors())
-app.options('*', cors());
-/*app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header("Access-Control-Allow-Methods", "GET, OPTIONS, POST, PUT")
-  next();
-});*/
+app.options(client_url, cors());
+connect()
 
 app.use('/api', routes);
 
 app.get('/', async(req,res) => {
-  await connect()
-  res.json({data:test})
+  res.json({status:status})
 });
+
 
 const port = 8080;
 app.listen(port,(req,res) => {
   console.log(`Server listening on port ${port}`);
-  
 });
 

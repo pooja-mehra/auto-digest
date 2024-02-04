@@ -167,11 +167,19 @@ export default function ShoppingList(prop) {
             setUserShoppingList()
           }
           try{  
-            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:shoppingListQuery,userId:prop.userId}).then((res)=>{
-              getAllUserGrocery(null)
-              setShoppingList({listName:'',items:[]}) 
-              localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
-              setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
+            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:shoppingListQuery},
+            {headers: {
+              Authorization: `Bearer ${prop.userId}`,
+              Accept: 'application/json'}
+            })
+            .then((res)=>{
+              console.log(res)
+              if(res && res.data && res.data.success === true){
+                getAllUserGrocery(null)
+                setShoppingList({listName:'',items:[]}) 
+                localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+                setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
+              }
             })
           } catch(e){
             console.log(e)
@@ -201,9 +209,14 @@ export default function ShoppingList(prop) {
       if(prop && prop.userId !== null && prop.userId !== ''){ 
         const itemName = details.name
         try{
-          await axios.post(`${base_url}api/updateusergrocerybyname`,{name:details.name,used:consumed.used,userId:prop.userId}).then((res)=>{
-            if(res && res.status === 200){
-                getAllUserGrocery(null)
+          await axios.post(`${base_url}api/updateusergrocerybyname`,{name:details.name,used:consumed.used},
+          {headers: {
+            Authorization: `Bearer ${prop.userId}`,
+            Accept: 'application/json'}
+          })
+          .then((res)=>{
+            if(res && res.status === 200 && res.data.acknowledged){
+                res.data.modifiedCount > 0 && getAllUserGrocery(null)
                 setOpenAlert({isOpen:true,status:'success',msg:`Successfully updated item: ${itemName}`})
             }
           })
@@ -220,16 +233,22 @@ export default function ShoppingList(prop) {
     const setUserShoppingList = async () =>{
       const filteredShoppingList = shoppingList.items.filter((item,index)=>item.name !== '')   
       const listName = shoppingList.listName.replace(/[^a-zA-Z ]/g,"").replace(/^\s+|\s+$/g, "")
-      if(filteredShoppingList && filteredShoppingList.length>0 && listName && listName !== '' && prop.userId !== null && prop.userId !== ''){
+      if(filteredShoppingList && listName && listName !== '' && prop.userId !== null && prop.userId !== ''){
         let shoppingListQuery = mergeShoppingList(filteredShoppingList)
         try{  
           await axios.post(`${base_url}api/putusershoppinglist`,
-          {listName:shoppingList.listName,queryItems:shoppingListQuery,userId:prop.userId})
+            {listName:shoppingList.listName,queryItems:shoppingListQuery},
+            {headers: {
+              Authorization: `Bearer ${prop.userId}`,
+              Accept: 'application/json'}}
+            )
           .then((res)=>{
-          localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
-          setShoppingList({listName:'',items:[]}) 
-          setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
-          getUserShoppingListNames()
+            if(res && res.status === 200 && res.data && res.data.acknowledged === true){
+              localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+              setShoppingList({listName:'',items:[]}) 
+              setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
+              getUserShoppingListNames()
+            }
         })
         } catch(e){
           console.log(e)
@@ -279,7 +298,7 @@ export default function ShoppingList(prop) {
             Authorization: `Bearer ${prop.userId}`,
             Accept: 'application/json'
           }}).then((res)=>{
-           if(res && res.data){
+           if(res && res.data && res.data.items){
              localStorage.setItem('shoppinglist',JSON.stringify({listName:listName,items:[...res.data.items]}))
              setShoppingList({listName:listName,items:[...res.data.items]})
            } 
@@ -298,7 +317,7 @@ export default function ShoppingList(prop) {
           await axios.delete(`${base_url}api/deleteshoppinglistbyname`,{ params: { listName: option }, 
           headers: { Authorization: `Bearer ${prop.userId}`,Accept: 'application/json'} })
           .then(function (res) {
-            if(res && res.data && res.data.deletedCount === 1){
+            if(res && res.status === 200 && res.data && res.data.acknowledged === true && res.data.deletedCount === 1){
               const names = shoppingListNames.filter((name) => name !== option)
               setShoppingListNames(names)
               localStorage.setItem('shoppinglistnames',JSON.stringify(names))

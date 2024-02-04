@@ -24,8 +24,8 @@ export default function MainToolabr(props){
           }
       })
       .then((res) => {
-        if(res && res.data && res.data.email){
-          confirmUser(res.data.email,res.data.picture)
+        if(res && res.data && res.data.email && res.data.id){
+          confirmUser(res.data.email,res.data.picture,res.data.id)
         } else{
           console.log('Invalid Google Account')
         }
@@ -35,14 +35,15 @@ export default function MainToolabr(props){
     onError: (error) => console.log('Login Failed:', error)
   });
 
-  const confirmUser = async(email,picture) =>{
+  const confirmUser = async(email,picture,id) =>{
     try{  
-      await axios.post(`${base_url}api/confirmuser`,{email:email,creationDate:new Date(Date.now())}).then((res)=>{
+      await axios.post(`${base_url}api/confirmuser`,{email:email,creationDate:new Date(Date.now())},
+      {headers: {
+        Authorization: `Bearer ${id}`,
+        Accept: 'application/json'}
+      }).then((res)=>{
        if(res && res.status === 200){
-        console.log(res)
         setUser({email:res.data.email,avatar:picture, userId:res.data._id})
-       } else{
-        console.log(res)
        }
       })
     } catch(e){
@@ -65,7 +66,7 @@ export default function MainToolabr(props){
             : 
             <Chip
             avatar={<GoogleIcon size="small" style={{color:"#5393ff"}}></GoogleIcon>}
-            label='SIGN IN WITH'
+            label='SIGN IN'
             variant="outlined"
             style={{color:'white' }}
             onClick={() => login()}

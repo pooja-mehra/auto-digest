@@ -40,8 +40,7 @@ export default function TextExtractor(prop) {
         await axios.get(`${base_url}api/getscannedgrocerybycode`,{params:{code:parseInt(decodedText)}})
         .then((res)=>{
           localStorage.setItem('code',decodedText)
-        if(res && res.data){
-          setScannedData(null)
+        if(res && res.status === 200 && res.data){
           setScannedData({name:res.data.name,qty:1})
         } else{
           setOpenAlert({isOpen:true,status:'warning', msg:'Item Not Found! Enter Item Name'})
@@ -53,7 +52,7 @@ export default function TextExtractor(prop) {
 
     useEffect(()=>{
       scannedData && setOcr([scannedData,...ocr])
-    },[scannedData,prop])
+    },[scannedData])
 
   const handleClose = () => {
     setOpen(false);
@@ -220,9 +219,15 @@ export default function TextExtractor(prop) {
         if(ocr.length > 0 && (prop.userId !== '' || prop.userId !== null)){
           let ocrQuery = mergeShoppingList(ocr,true)
           try{  
-            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:ocrQuery,userId:prop.userId}).then((res)=>{
-            localStorage.removeItem('details')
-            setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
+            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:ocrQuery},
+            {headers: {
+              Authorization: `Bearer ${prop.userId}`,
+              Accept: 'application/json'}
+            }).then((res)=>{
+              if(res && res.data && res.data.success === true){
+                localStorage.removeItem('details')
+                setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
+              }
             })
           } catch(e){
             console.log(e)
