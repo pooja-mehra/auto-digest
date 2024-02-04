@@ -4,7 +4,6 @@ const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
 const routes = require('./routes/api');
 require('dotenv').config();
-var cookieParser = require('cookie-parser');
 const app = express();
 const db_url = process.env.MONGODB_URI
 const client_url = process.env.REACT_APP_CLIENT_URL
@@ -18,7 +17,6 @@ async function connect() {
     status = 'error'
   }
 }
-app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(cors())
 app.options(client_url, cors());
