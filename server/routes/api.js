@@ -14,21 +14,26 @@ function getISODate(date){
 }
 
 router.post('/putusershoppinglist', (req, res, next) => {
-    const {listName, queryItems, userId} = req.body
-    try{
-        UserShopping.updateOne({userId:userId,listName:listName},{$set: { items:queryItems}}, {upsert:true})
-        .then((data)=>{
-            res.json(data)
-        })
-    } catch(e){
-        console.log(e)
+    const {listName, queryItems} = req.body
+    let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
+    if(listName && listName !== '' &&  mongoose.isValidObjectId(userId[1]) && queryItems && userId && userId[1]) {
+        userId = userId[1]
+        try{
+            UserShopping.updateOne({userId:userId,listName:listName},{$set: { items:queryItems}}, {upsert:true})
+            .then((data)=>{
+                res.json(data)
+            })
+        } catch(e){
+            console.log(e)
+        }
+    } else{
+        res.status(400).send(new Error('Bad Request'))
     }
-   
 })
 
 router.get('/getusershoppinglistnames', (req,res,next)=>{
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
-    if (userId && userId[1]) {
+    if (userId && userId[1] && mongoose.isValidObjectId(userId[1])) {
          userId = userId[1]
         try{
             UserShopping.find({userId:userId},{_id:0,listName:1}).then((data)=>{
@@ -37,42 +42,52 @@ router.get('/getusershoppinglistnames', (req,res,next)=>{
         } catch(e){
             console.log(e)
         }
+    }else{
+        res.status(400).send(new Error('Bad Request'))
     }
 })
 
 router.delete('/deleteshoppinglistbyname', (req,res,next)=>{
     const listName = req.query.listName
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
-        if (userId && userId[1] && listName && listName !== '') {
-            userId = userId[1]
-            try{
-                UserShopping.deleteOne({userId:userId,listName:listName}).then((data)=>{
-                    res.json(data)
-                })
-            } catch(e){
-                console.log(e)
-            }
+    if (userId && userId[1] && mongoose.isValidObjectId(userId[1]) && listName && listName !== '') {
+        userId = userId[1]
+        try{
+            UserShopping.deleteOne({userId:userId,listName:listName}).then((data)=>{
+                res.json(data)
+            })
+        } catch(e){
+            console.log(e)
         }
+    }else{
+        res.status(400).send(new Error('Bad Request'))
+    }
 })
 
 router.get('/getshoppinglistbyname', (req,res,next)=>{
     const listName = req.query.listName
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
-        if (userId && userId[1]) {
+        if (userId && userId[1] && mongoose.isValidObjectId(userId[1]) && listName && listName !== '') {
             userId = userId[1]
             try{
-                UserShopping.findOne({userId:userId,listName:listName},{_id:0,"items.name":1,"items.qty":1}).then((data)=>{
+                UserShopping.findOne({userId:new ObjectId(userId),listName:listName},{_id:0,"items.name":1,"items.qty":1}).then((data)=>{
                     res.json(data)
                 })
             } catch(e){
                 console.log(e)
             }
+        }else{
+            res.status(400).send(new Error('Bad Request'))
         }
 })
 
 router.post('/putusergrocery', (req, res, next) => {
-    const {purchaseDate,queryItems,userId} = req.body
-    const isoDate = getISODate(purchaseDate)
+    const {purchaseDate,queryItems} = req.body
+    let status = true
+    let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
+    if(userId && userId[1] && mongoose.isValidObjectId(userId[1]) && purchaseDate && queryItems){
+        userId = userId[1]
+        const isoDate = getISODate(purchaseDate)
     try{
         queryItems.forEach((item)=>{
         UserInventories.findOne({userId:new ObjectId(userId), name: item.name}).then((documentToUpdate)=>{
@@ -102,17 +117,19 @@ router.post('/putusergrocery', (req, res, next) => {
                 //res.json(data)
             })
         }})
-    })
-    } catch(e){
-        res.json({success:false})
-    } finally{
-        res.json({success:true})
-    }
+        })
+        } catch(e){
+            console.log(e)
+            status = false
+        } finally{
+            res.json({success:status})
+        }
+    } 
 })
 
 router.get('/getallusergrocery', (req, res, next) => {
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
-    if (userId && userId[1]) { 
+    if (userId && userId[1] && mongoose.isValidObjectId(userId[1])) { 
         userId = userId[1]
         try{
             UserInventories.aggregate([
@@ -140,42 +157,60 @@ router.get('/getallusergrocery', (req, res, next) => {
         } catch(e){
             console.log(e)
         }
+    } else{
+        res.status(400).send(new Error('Bad Request'))
     }
     });
 
 router.post('/updateusergrocerybyname', (req,res,next)=>{
-    const{name,used,userId} = req.body
-    try{
-        UserInventories.updateOne({userId:new ObjectId(userId),name:name},{used:used})
-        .then((data)=>{res.json(data)})
-
-    } catch(e){
-        console.log(e)
+    const{name,used} = req.body
+    let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
+    if(userId && userId[1] && mongoose.isValidObjectId(userId[1]) && name && used && used >0){
+        userId = userId[1] 
+        try{
+            UserInventories.updateOne({userId:new ObjectId(userId),name:name},{used:used})
+            .then((data)=>{res.json(data)})
+    
+        } catch(e){
+            console.log(e)
+        }
+    } else{
+        res.status(400).send(new Error('Bad Request'))
     }
+    
 })
 
 router.get('/getscannedgrocerybycode', (req,res,next)=>{
-    const code = req.query.code
-    try{
-        ScannedGroceries.findOne({code:code}).then((data)=>{
-            res.json(data)
-        })
-    }catch(e){
-        console.log(e)
-    }
+    const {code} = req.query
+    if(code){
+        try{
+            ScannedGroceries.findOne({code:code}).then((data)=>{
+                res.json(data)
+            })
+        }catch(e){
+            console.log(e)
+        }
+    } else{
+        res.status(400).send(new Error('Bad Request'))
+    }   
 })
 
 router.post('/confirmuser', (req, res, next) => {
     const {email, creationDate} = req.body
-    try{
-        UserAccount.findOneAndUpdate({email:email},{ $setOnInsert: { email: email, creationDate: creationDate } },
-        { upsert: true}).then((data)=>{
-            res.json(data)
-        })
-    } catch(e){
-        console.log(e)
+    let googleId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
+    if(email && creationDate && googleId && googleId[1]){
+        try{
+            UserAccount.findOneAndUpdate({email:email},{ $setOnInsert: { email: email, creationDate: creationDate } },
+            { projection: { "email" : 1 } },
+            { upsert: true}).then((data)=>{
+                res.json(data)
+            })
+        } catch(e){
+            console.log(e)
+        }
+    } else{
+        res.status(400).send(new Error('Bad Request'))
     }
-   
 })
 
 module.exports = router;

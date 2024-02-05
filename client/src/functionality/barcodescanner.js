@@ -32,15 +32,16 @@ const BarCodeScanner = (props) => {
     const handleStartScan = () => {
         const html5QrCode = new Html5QrcodeScanner(
             'scanner',
-            { fps: 10, qrbox: {height:250,width:350},
+            { fps: 1, qrbox:{height:250,width:320},
             supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]},
+            { facingMode:  isMobile?"environment":"user" }
             );
             html5QrCode.render(onScanSuccess);
 
   };
 
   return (
-      <div ref={scannerRef} style={{ width: '400px', margin: 'auto' }} id={'scanner'} hidden={!props.openScanner}>
+      <div ref={scannerRef} style={{ width: '350px',margin: 'auto',height:'300px' }} id={'scanner'} hidden={!props.openScanner}>
       </div>
   );
 };

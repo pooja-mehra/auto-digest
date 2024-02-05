@@ -21,6 +21,10 @@ import Fuse from "fuse.js";
 import Button from '@mui/material/Button';
 import Fab from '@mui/material/Fab';
 import {isMobile} from 'react-device-detect';
+import PaperComponent from '../shared/draggablecomponent';
+import { DialogTitle } from "@mui/material";
+import ClearAllDialog from "../shared/cleardialog";
+
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function TextExtractor(prop) {
@@ -30,7 +34,7 @@ export default function TextExtractor(prop) {
     const webcamRef = useRef(null);
     const [open, setOpen] = useState(false);
     const [openScanner, setOpenScanner] = useState(false);
-    const [openDialog, setOpenDialog] = useState(false);
+    const [openDialog, setOpenDialog] = useState({isOpen:false,dialogType:''});
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
     const [scannedData,setScannedData] = useState(null)
     const fileInputRef=useRef();
@@ -40,8 +44,7 @@ export default function TextExtractor(prop) {
         await axios.get(`${base_url}api/getscannedgrocerybycode`,{params:{code:parseInt(decodedText)}})
         .then((res)=>{
           localStorage.setItem('code',decodedText)
-        if(res && res.data){
-          setScannedData(null)
+        if(res && res.status === 200 && res.data){
           setScannedData({name:res.data.name,qty:1})
         } else{
           setOpenAlert({isOpen:true,status:'warning', msg:'Item Not Found! Enter Item Name'})
@@ -53,7 +56,7 @@ export default function TextExtractor(prop) {
 
     useEffect(()=>{
       scannedData && setOcr([scannedData,...ocr])
-    },[scannedData,prop])
+    },[scannedData])
 
   const handleClose = () => {
     setOpen(false);
@@ -166,15 +169,18 @@ export default function TextExtractor(prop) {
         fullWidth
         open={open}
         onClose={handleClose}
+        PaperComponent={PaperComponent}
+        style={{textAlign:'center'}}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
+      <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">Capture Reciept</DialogTitle>
         <DialogContent>
-          <div className="container" style={{textAlign:'center'}}>
+          <div className="container" >
             <Webcam ref={webcamRef}  screenshotFormat="image/png" videoConstraints = {videoConstraints}/>   
           </div>
         </DialogContent>
-        <div style={{textAlign:'center',marginBottom:'1vh'}} className="capture">
+        <div style={{margin:'1vh'}} className="capture">
         <Button onClick={capture}  size="small" variant="contained" >Capture</Button>
         </div>
       </Dialog>
@@ -214,15 +220,21 @@ export default function TextExtractor(prop) {
   }
 
     const setDialog = async (isOpen, isCancel, purchaseDate) =>{
-      setOpenDialog(isOpen)
+      setOpenDialog({isOpen:isOpen,dialogType:'simple'})
       setImageData(null)
       if(!isCancel){
         if(ocr.length > 0 && (prop.userId !== '' || prop.userId !== null)){
           let ocrQuery = mergeShoppingList(ocr,true)
           try{  
-            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:ocrQuery,userId:prop.userId}).then((res)=>{
-            localStorage.removeItem('details')
-            setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
+            await axios.post(`${base_url}api/putusergrocery`,{purchaseDate:purchaseDate,queryItems:ocrQuery},
+            {headers: {
+              Authorization: `Bearer ${prop.userId}`,
+              Accept: 'application/json'}
+            }).then((res)=>{
+              if(res && res.data && res.data.success === true){
+                localStorage.removeItem('details')
+                setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
+              }
             })
           } catch(e){
             console.log(e)
@@ -251,6 +263,14 @@ export default function TextExtractor(prop) {
       setOpenScanner(false)
     }
 
+    const clearAll = (isClear) =>{
+      if(isClear){
+        setOcr([])
+        setImageData(null)
+      }
+      setOpenDialog({isOpen:false,type:'clear'})
+    }
+    
     return (
       <div className="main" style={{display: 'flex',height:'80vh',flexDirection:'column',overflowY:'auto',marginTop:'2vh'}}>
       <BarcodeScanner handleScan={handleScan} openScanner={openScanner} setScanStatus={setScanStatus}/> 
@@ -275,8 +295,7 @@ export default function TextExtractor(prop) {
         <div  className="file-upload">
             <Tooltip title='Clear List' enterTouchDelay={0}>
             <Button size="small" variant="contained" onClick={()=>{
-            setOcr([])
-            setImageData(null)
+              setOpenDialog({isOpen:true,dialogType:'clear'})
             }}><ClearIcon size="small"/>{!isMobile && 'Clear List'}</Button>
             </Tooltip>
           </div>
@@ -316,14 +335,19 @@ export default function TextExtractor(prop) {
             <Tooltip title='Add to Inventory' enterTouchDelay={0}>
               <Button size="small"  variant="contained"  onClick={()=>{
                 setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
-                prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
+                prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
               }}>
               <SaveIcon size="small"/>{!isMobile && 'Save Inventory'}</Button>
             </Tooltip>
           </div>
         </div>
         </div>
-        <SimpleDialog openDialog ={openDialog} itemList={ocr} type = {'date'} setDialog={setDialog}></SimpleDialog>
+        {
+          openDialog.dialogType === 'simple'?
+          <SimpleDialog openDialog ={openDialog.isOpen} itemList={ocr} type = {'date'} setDialog={setDialog}></SimpleDialog>
+          : openDialog.dialogType === 'clear' &&
+          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll}></ClearAllDialog>
+        }
       </div>
     );
   }
