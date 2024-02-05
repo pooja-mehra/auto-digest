@@ -10,6 +10,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import DateRangePicker from '../functionality/dateRangePicker';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import PaperComponent from '../shared/draggablecomponent';
 
 export default function SimpleDialog(props) {
   const {openDialog, type} = props;
@@ -28,8 +29,10 @@ export default function SimpleDialog(props) {
     setSelection(selection)
   }
   return (
-    <Dialog onClose={handleClose} open={openDialog}>
-      <DialogTitle>Set Purchase Date {type === 'daterange'&&' Range'}</DialogTitle>
+    <Dialog onClose={handleClose} open={openDialog} PaperComponent={PaperComponent}>
+      <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
+      Set Purchase Date {type === 'daterange'&&' Range'}
+      </DialogTitle>
       <DialogContent>
       {
         type === 'daterange'?

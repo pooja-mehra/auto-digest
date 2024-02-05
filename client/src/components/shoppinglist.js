@@ -13,6 +13,7 @@ import Fab from '@mui/material/Fab';
 import Button from '@mui/material/Button';
 import {isMobile} from 'react-device-detect';
 import SaveIcon from '@mui/icons-material/Save';
+import ClearAllDialog from "../shared/cleardialog";
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function ShoppingList(prop) {
@@ -27,7 +28,7 @@ export default function ShoppingList(prop) {
           return storedData ? JSON.parse(storedData) : [];
         })
     const [shoppedList,setShoppedList] = useState([])
-    const [openDialog, setOpenDialog] = useState(false);
+    const [openDialog, setOpenDialog] = useState({isOpen:false,dialogType:''});
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
     const [details, setDetails]  = useState(null)
     const [consumed,setConsumed] = useState({used:0,left:0})
@@ -159,7 +160,7 @@ export default function ShoppingList(prop) {
 
     const setDialog = async (isOpen, isCancel, purchaseDate) =>{
       if(prop && prop.userId !== null && prop.userId !== ''){
-      setOpenDialog(isOpen)
+      setOpenDialog({isOpen:isOpen,dialogType:'simple'})
       if(!isCancel){
         if(shoppingList.items.length > 0){
           let shoppingListQuery = mergeShoppingList(shoppingList.items)
@@ -329,6 +330,14 @@ export default function ShoppingList(prop) {
       }
     }
 
+    const clearAll = (isClear) =>{
+      if(isClear){
+        localStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
+        setShoppingList({...shoppingList,items:[]})
+      }
+      setOpenDialog({isOpen:false,dialogType:'clear'})
+    }
+
     return(
         <div className="main" style={{display: 'flex',height:'80vh', flexDirection:'column'}}>
         <div className="layout" >
@@ -353,8 +362,7 @@ export default function ShoppingList(prop) {
             <div  className="shoppingfile-upload">
                 <Tooltip title='Clear List' enterTouchDelay={0}>
                 <Button size="small"  variant="contained" onClick={()=>{
-                  localStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
-                  setShoppingList({...shoppingList,items:[]})
+                  setOpenDialog({isOpen:true,dialogType:'clear'})
                 }}><ClearIcon size="small"/>{!isMobile && 'Clear List'}</Button>
               </Tooltip>
             </div>
@@ -362,7 +370,7 @@ export default function ShoppingList(prop) {
               <Tooltip title='Save Inventory' enterTouchDelay={0}>
               <Button size="small" variant="contained" onClick={()=>{
                 setShoppingList({...shoppingList,items:shoppingList.items.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0)})
-                prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
+                prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
               }}><SaveIcon size="small"/>{!isMobile && 'Save Inventory'}</Button>
               </Tooltip>
             </div>
@@ -375,7 +383,12 @@ export default function ShoppingList(prop) {
           changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
           header={shoppedHeader}/>
         </div>
-        <SimpleDialog openDialog ={openDialog} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
+        {
+          openDialog.dialogType === 'simple'?
+          <SimpleDialog openDialog ={openDialog} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
+          :openDialog.dialogType === 'clear' &&
+          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll}></ClearAllDialog>
+        }
         </div>
     )
 }
