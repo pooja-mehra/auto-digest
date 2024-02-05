@@ -2,9 +2,8 @@ import './App.css';
 import HeaderTabs from "./components/headertabs";
 import { useEffect, useState, createContext } from 'react';
 import MainToolabr from './components/maintoolbar';
-import axios from "axios";
+
 export var UserContext = createContext(null);
-const base_url = process.env.REACT_APP_BASE_URL
 
 export default function App() {
   const [userId,setUserId] = useState(null)
@@ -25,10 +24,11 @@ export default function App() {
   return (
     <div>
       <header>
-        <title><h4 data-testid="title">TextExtractor</h4></title>
+        <title><h4 id="title">TextExtractor</h4></title>
       </header>
-      <main>
-        <MainToolabr setUser={setUser}></MainToolabr>
+      <main >
+        <MainToolabr setUser={setUser}>
+        </MainToolabr>
           <UserContext.Provider value={userId}>
             <HeaderTabs>
             </HeaderTabs>

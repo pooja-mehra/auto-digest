@@ -201,8 +201,7 @@ router.post('/confirmuser', (req, res, next) => {
     if(email && creationDate && googleId && googleId[1]){
         try{
             UserAccount.findOneAndUpdate({email:email},{ $setOnInsert: { email: email, creationDate: creationDate } },
-            { projection: { "email" : 1 } },
-            { upsert: true}).then((data)=>{
+            { upsert: true, new: true, projection:{email:1}}).then((data)=>{
                 res.json(data)
             })
         } catch(e){

@@ -24,6 +24,7 @@ import {isMobile} from 'react-device-detect';
 import PaperComponent from '../shared/draggablecomponent';
 import { DialogTitle } from "@mui/material";
 import ClearAllDialog from "../shared/cleardialog";
+import Walkthrough from "../shared/walkthrough";
 
 const base_url = process.env.REACT_APP_BASE_URL
 
