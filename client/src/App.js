@@ -2,7 +2,6 @@ import './App.css';
 import HeaderTabs from "./components/headertabs";
 import { useEffect, useState, createContext } from 'react';
 import MainToolabr from './components/maintoolbar';
-
 export var UserContext = createContext(null);
 
 export default function App() {
@@ -12,9 +11,9 @@ export default function App() {
     setUserId(user.userId)
   }
   useEffect(()=>{
-    localStorage.removeItem('details')
-    localStorage.removeItem('shoppinglist')
-    localStorage.removeItem('shoppinglistnames')
+    window.sessionStorage.removeItem('details')
+    window.sessionStorage.removeItem('shoppinglist')
+    window.sessionStorage.removeItem('shoppinglistnames')
   })
 
   useEffect(()=>{

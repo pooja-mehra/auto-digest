@@ -43,7 +43,7 @@ export default function TextExtractor(prop) {
       try{  
         await axios.get(`${base_url}api/getscannedgrocerybycode`,{params:{code:parseInt(decodedText)}})
         .then((res)=>{
-          localStorage.setItem('code',decodedText)
+          window.sessionStorage.setItem('code',decodedText);
         if(res && res.status === 200 && res.data){
           setScannedData({name:res.data.name,qty:1})
         } else{
@@ -232,7 +232,7 @@ export default function TextExtractor(prop) {
               Accept: 'application/json'}
             }).then((res)=>{
               if(res && res.data && res.data.success === true){
-                localStorage.removeItem('details')
+                window.sessionStorage.removeItem('details')
                 setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
               }
             })
@@ -274,7 +274,7 @@ export default function TextExtractor(prop) {
     return (
       <div className="main" style={{display: 'flex',height:'80vh',flexDirection:'column',overflowY:'auto',marginTop:'2vh'}}>
       <BarcodeScanner handleScan={handleScan} openScanner={openScanner} setScanStatus={setScanStatus}/> 
-      {
+\      {
         open &&
         <CustomWebcam />
       }

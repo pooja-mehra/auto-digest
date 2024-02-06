@@ -28,7 +28,6 @@ app.get('/', async(req,res) => {
   res.json({status:status})
 });
 
-
 const port = 8080;
 app.listen(port,(req,res) => {
   console.log(`Server listening on port ${port}`);

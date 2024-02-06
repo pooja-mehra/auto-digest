@@ -11,12 +11,12 @@ import { UserContext } from "../App"
 
 export default function HeaderTabs() {
     const [tabNumber, setTabNumber] = useState(()=>{
-        const number = localStorage.getItem('tabnumber')
+        const number = window.sessionStorage.getItem('tabnumber')
         return number ? parseInt(number) :0
     });
     const handleChange = (event, newValue) => {
         setTabNumber(newValue);
-        localStorage.setItem('tabnumber',newValue)
+        window.sessionStorage.setItem('tabnumber',newValue)
     };
    
     return (

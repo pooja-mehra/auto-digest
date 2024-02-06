@@ -19,12 +19,12 @@ const base_url = process.env.REACT_APP_BASE_URL
 export default function ShoppingList(prop) {
     const [shoppingList,setShoppingList] = useState(
       () => {
-        const storedData = localStorage.getItem('shoppinglist');
+        const storedData = window.sessionStorage.getItem('shoppinglist');
         return storedData ? JSON.parse(storedData) : {listName:'',items:[]};
       })
       const [shoppingListNames,setShoppingListNames] = useState(
         () => {
-          const storedData = localStorage.getItem('shoppinglistnames');
+          const storedData = window.sessionStorage.getItem('shoppinglistnames');
           return storedData ? JSON.parse(storedData) : [];
         })
     const [shoppedList,setShoppedList] = useState([])
@@ -45,7 +45,7 @@ export default function ShoppingList(prop) {
     {id:'details',label:'',minWidth: 50}]
 
     useEffect(()=>{
-        getAllUserGrocery(localStorage.getItem('details')?JSON.parse(localStorage.getItem('details')):null)
+        getAllUserGrocery(window.sessionStorage.getItem('details')?JSON.parse(window.sessionStorage.getItem('details')):null)
         details && setConsumed({used:details.used?details.used:0,left:details.used?details.qty-details.used:details.qty})
     },[details,prop])
 
@@ -58,7 +58,7 @@ export default function ShoppingList(prop) {
     useEffect(()=>{
         const filteredShoppingList = shoppingList.items.filter((item,index)=>item.name !== '')      
         if(filteredShoppingList && filteredShoppingList.length>0){
-          localStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,
+          window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,
           items:shoppingList.items.filter((item,i)=>item.name !== '' && item.qty !=='' && item.qty >0)}))
         }
     },[shoppingList])
@@ -76,7 +76,7 @@ export default function ShoppingList(prop) {
         }}).then((res)=>{
           if(res && res.data.length > 0){
             details = res.data
-            localStorage.setItem('details',JSON.stringify(details))
+            window.sessionStorage.setItem('details',JSON.stringify(details))
           } 
           })
         } catch(e){
@@ -178,7 +178,7 @@ export default function ShoppingList(prop) {
               if(res && res.data && res.data.success === true){
                 getAllUserGrocery(null)
                 setShoppingList({listName:'',items:[]}) 
-                localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+                window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
                 setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
               }
             })
@@ -193,8 +193,8 @@ export default function ShoppingList(prop) {
       }
     }
     const getDetails = (name) =>{
-      if(localStorage.getItem('details') && JSON.parse(localStorage.getItem('details')).length > 0){
-        let data = JSON.parse(localStorage.getItem('details')).filter((item,i)=> item.name === name)
+      if(window.sessionStorage.getItem('details') && JSON.parse(window.sessionStorage.getItem('details')).length > 0){
+        let data = JSON.parse(window.sessionStorage.getItem('details')).filter((item,i)=> item.name === name)
         data && data.length > 0 && setDetails(data[0])
       } else{
         setDetails(null)
@@ -245,7 +245,7 @@ export default function ShoppingList(prop) {
             )
           .then((res)=>{
             if(res && res.status === 200 && res.data && res.data.acknowledged === true){
-              localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+              window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
               setShoppingList({listName:'',items:[]}) 
               setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
               getUserShoppingListNames()
@@ -258,7 +258,7 @@ export default function ShoppingList(prop) {
         filteredShoppingList.length > 0 && listName === '' && setOpenAlert({isOpen:true,status:'error',msg:'Provide Title to Current List'})
         prop.userId === null || prop.userId === '' && setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
         if(filteredShoppingList.length === 0 ){
-          localStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+          window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
           setShoppingList({listName:'',items:[]}) 
         }
 
@@ -274,7 +274,7 @@ export default function ShoppingList(prop) {
         }}).then((res)=>{
            if(res && res.data.length > 0){
              const shoppingListNames = res.data.map((d,i)=>d.listName)
-             localStorage.setItem('shoppinglistnames',JSON.stringify(shoppingListNames))
+             window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingListNames))
              setShoppingListNames(shoppingListNames)
            } 
            })
@@ -300,7 +300,7 @@ export default function ShoppingList(prop) {
             Accept: 'application/json'
           }}).then((res)=>{
            if(res && res.data && res.data.items){
-             localStorage.setItem('shoppinglist',JSON.stringify({listName:listName,items:[...res.data.items]}))
+            window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:listName,items:[...res.data.items]}))
              setShoppingList({listName:listName,items:[...res.data.items]})
            } 
            })
@@ -321,7 +321,7 @@ export default function ShoppingList(prop) {
             if(res && res.status === 200 && res.data && res.data.acknowledged === true && res.data.deletedCount === 1){
               const names = shoppingListNames.filter((name) => name !== option)
               setShoppingListNames(names)
-              localStorage.setItem('shoppinglistnames',JSON.stringify(names))
+              window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(names))
             }  
         })
         } catch(e){
@@ -332,7 +332,7 @@ export default function ShoppingList(prop) {
 
     const clearAll = (isClear) =>{
       if(isClear){
-        localStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
+        window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
         setShoppingList({...shoppingList,items:[]})
       }
       setOpenDialog({isOpen:false,dialogType:'clear'})

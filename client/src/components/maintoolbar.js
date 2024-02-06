@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import Avatar from '@mui/material/Avatar';
 import GoogleIcon from '@mui/icons-material/Google';
 import Chip from '@mui/material/Chip';
+import SideDrawer from '../shared/sidedrawer';
+
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function MainToolabr(props){
@@ -50,10 +52,27 @@ export default function MainToolabr(props){
       console.log(e)
     }
   }
-  
+  const signout = async() =>{
+    console.log(user)
+    if(user && user.userId !== ''){
+      try{  
+        await axios.post(`${base_url}signout`).then((res)=>{
+         if(res && res.data && res.data.dbconnect === false){
+          window.sessionStorage.clear()
+          setUser({email:'',avatar:'',userId:''})
+         }
+        })
+      } catch(e){
+        console.log(e)
+      }
+    }
+    
+  }
   return(
       <Toolbar style={{backgroundColor:'#482880'}}>
         <div style={{width: '100%',float: 'left'}}>
+        <div style={{float:'left', backgroundColor:'#482880'}} >
+        </div>
           <div style={{float:'right', backgroundColor:'#482880'}} >
           {
             user && user.email !== ''? 
