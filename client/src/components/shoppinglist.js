@@ -14,13 +14,14 @@ import Button from '@mui/material/Button';
 import {isMobile} from 'react-device-detect';
 import SaveIcon from '@mui/icons-material/Save';
 import ClearAllDialog from "../shared/cleardialog";
+import InventoryFilters from "../shared/inventoryfilters";
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function ShoppingList(prop) {
     const [shoppingList,setShoppingList] = useState(
       () => {
         const storedData = window.sessionStorage.getItem('shoppinglist');
-        return storedData ? JSON.parse(storedData) : {listName:'',items:[]};
+        return storedData ? JSON.parse(storedData) : {listName:'',items:[],permission:'',ownedBy:''};
       })
       const [shoppingListNames,setShoppingListNames] = useState(
         () => {
@@ -42,11 +43,12 @@ export default function ShoppingList(prop) {
     {id:'left',label:'Quantity Left',minWidth: 50, type:"number"},
     {id:'lastPurchaseDate',label:'Last Purcahse Date',minWidth: 50},
     {id:'frequency', label:' Buying Frequency', minWidth: 50},
+    {id:'account',label:'Account',minWidth: 50},
     {id:'details',label:'',minWidth: 50}]
 
     useEffect(()=>{
-        getAllUserGrocery(window.sessionStorage.getItem('details')?JSON.parse(window.sessionStorage.getItem('details')):null)
-        details && setConsumed({used:details.used?details.used:0,left:details.used?details.qty-details.used:details.qty})
+      prop && prop.accounts && prop.accounts.length>0 && getUserGrocery(prop.accounts)
+      details && setConsumed({used:details.used?details.used:0,left:details.used?details.qty-details.used:details.qty})
     },[details,prop])
 
     useEffect(()=>{
@@ -67,6 +69,42 @@ export default function ShoppingList(prop) {
       shoppingListNames.length === 0 && prop.userId !== '' && prop.userId !== null && getUserShoppingListNames()
     })
 
+    const getUserGrocery = async (accounts) =>{
+      let userEmails = accounts.length > 0 ? accounts.filter((c)=>c.email !== 'All').map((a)=>a.email):[]
+      if(userEmails.length > 0 && prop.userId !== '' && prop.userId !== null && details === null){
+          try{
+            await axios.get(`${base_url}api/getallusersgrocery`,{
+              params:{userEmails:userEmails},
+              headers: {
+              Authorization: `Bearer ${prop.userId}`,
+              Accept: 'application/json'
+          }}).then((res)=>{
+            if(res && res.data.length > 0){
+              let data = res.data.map((inv,i)=> {return inv.inventories
+                .map((d)=> ({...d,account:inv.email.filter((e)=>e !== null)[0],permission:accounts.filter((a)=>a.email === inv.email.filter((e)=>e !== null)[0]).map((i)=>i.permission)[0]}))
+                })
+                let list =[]
+                data.forEach((d,i)=>{
+                  list.push(...d)
+                })
+              window.sessionStorage.setItem('details',JSON.stringify(list))
+              setDetails(list)
+            } 
+            })
+          } catch(e){
+            console.log(e)
+          }
+      } 
+      if(details !== null || (details && details.length > 0)){
+        let details = JSON.parse(sessionStorage.getItem('details'))
+        userEmails.length === 0 ? setShoppedList([]) :
+        setShoppedList(details.filter((d)=>userEmails.includes(d.account))
+          .map((detail)=>{return {...detail,lastPurchaseDate: new Date(detail.lastPurchaseDate).toLocaleDateString('en-us'),
+          daysTillNow:detail.daysTillNow,frequency:calcFrequency(detail.qty,detail.daysTillNow)}})
+          .sort((a,b)=> new Date(b.lastPurchaseDate).getTime() - new Date(a.lastPurchaseDate).getTime()))
+      }
+    }
+
     const getAllUserGrocery = async(details) =>{
      if(details === null && prop.userId !== '' && prop.userId !== null){
         try{
@@ -75,7 +113,7 @@ export default function ShoppingList(prop) {
             Accept: 'application/json'
         }}).then((res)=>{
           if(res && res.data.length > 0){
-            details = res.data
+            details = res.data[0].inventories
             window.sessionStorage.setItem('details',JSON.stringify(details))
           } 
           })
@@ -92,6 +130,7 @@ export default function ShoppingList(prop) {
           setShoppedList(data)
       } 
     }
+
     const calcFrequency = (qty,daysTillNow) =>{
       if(daysTillNow <= 7){
         return `${qty + ' in a week'} `
@@ -174,10 +213,10 @@ export default function ShoppingList(prop) {
               Accept: 'application/json'}
             })
             .then((res)=>{
-              console.log(res)
               if(res && res.data && res.data.success === true){
-                getAllUserGrocery(null)
-                setShoppingList({listName:'',items:[]}) 
+                //getUserGrocery(prop.accounts)
+                setDetails(null)
+                setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
                 window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
                 setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
               }
@@ -192,13 +231,14 @@ export default function ShoppingList(prop) {
         setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
       }
     }
-    const getDetails = (name) =>{
+    const getDetails = (name,account) =>{
       if(window.sessionStorage.getItem('details') && JSON.parse(window.sessionStorage.getItem('details')).length > 0){
-        let data = JSON.parse(window.sessionStorage.getItem('details')).filter((item,i)=> item.name === name)
+        let data = JSON.parse(window.sessionStorage.getItem('details'))
+        .filter((item,i)=> item.name === name && item.account === account)
         data && data.length > 0 && setDetails(data[0])
       } else{
         setDetails(null)
-        prop && prop.userId !== null && prop.userId !== '' && getAllUserGrocery(null)
+        //prop && prop.userId !== null && prop.userId !== '' && prop.accounts && getUserGrocery(prop.accounts)
       }
     }
 
@@ -209,15 +249,16 @@ export default function ShoppingList(prop) {
     const updateItem = async() =>{
       if(prop && prop.userId !== null && prop.userId !== ''){ 
         const itemName = details.name
+        const isAccount = details.account === prop.userEmail 
         try{
-          await axios.post(`${base_url}api/updateusergrocerybyname`,{name:details.name,used:consumed.used},
+          await axios.post(`${base_url}api/updateusergrocerybyname`,{email:prop.userEmail,name:details.name,used:consumed.used,isAccount:isAccount,account:details.account},
           {headers: {
             Authorization: `Bearer ${prop.userId}`,
             Accept: 'application/json'}
           })
           .then((res)=>{
             if(res && res.status === 200 && res.data.acknowledged){
-                res.data.modifiedCount > 0 && getAllUserGrocery(null)
+                res.data.modifiedCount > 0 &&  setDetails(null)//getUserGrocery(prop.accounts)
                 setOpenAlert({isOpen:true,status:'success',msg:`Successfully updated item: ${itemName}`})
             }
           })
@@ -229,6 +270,29 @@ export default function ShoppingList(prop) {
         setOpenAlert({isOpen:false,status:'error',msg:'Please SIGNIN to proceed'})
       }
        
+    }
+
+    const editOwnerShoppingList = async() =>{
+      const filteredShoppingList = shoppingList.items.filter((item,index)=>item.name !== '')   
+      const listName = shoppingList.listName.replace(/[^a-zA-Z ]/g,"").replace(/^\s+|\s+$/g, "")
+      if(filteredShoppingList && listName && listName !== '' && prop.userId !== null && prop.userId !== '' && shoppingList.permission === 'Edit Only'){
+        let shoppingListQuery = mergeShoppingList(filteredShoppingList)
+        try{  
+          await axios.post(`${base_url}api/editownershoppinglist`,
+            {listName:shoppingList.listName,queryItems:shoppingListQuery, editorEmail:prop.userEmail, ownerEmail:shoppingList.ownedBy},
+            )
+          .then((res)=>{
+            if(res && res.status === 200 && res.data && res.data.acknowledged === true){
+              window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+              setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
+              setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
+              getUserShoppingListNames()
+            }
+        })
+        } catch(e){
+          console.log(e)
+        }
+      }
     }
 
     const setUserShoppingList = async () =>{
@@ -246,7 +310,7 @@ export default function ShoppingList(prop) {
           .then((res)=>{
             if(res && res.status === 200 && res.data && res.data.acknowledged === true){
               window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
-              setShoppingList({listName:'',items:[]}) 
+              setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
               setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
               getUserShoppingListNames()
             }
@@ -256,10 +320,10 @@ export default function ShoppingList(prop) {
         }
       }else{
         filteredShoppingList.length > 0 && listName === '' && setOpenAlert({isOpen:true,status:'error',msg:'Provide Title to Current List'})
-        prop.userId === null || prop.userId === '' && setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
+        (prop.userId === null || prop.userId === '') && setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
         if(filteredShoppingList.length === 0 ){
           window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
-          setShoppingList({listName:'',items:[]}) 
+          setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
         }
 
       }
@@ -272,10 +336,30 @@ export default function ShoppingList(prop) {
             Authorization: `Bearer ${prop.userId}`,
             Accept: 'application/json'
         }}).then((res)=>{
-           if(res && res.data.length > 0){
-             const shoppingListNames = res.data.map((d,i)=>d.listName)
-             window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingListNames))
-             setShoppingListNames(shoppingListNames)
+          if(res && res.data){
+            let shoppingLists = []
+            if(res.data.ownedLists){
+              const ownedListNames = res.data.ownedLists.map((d,i)=>{
+                return {listName:d.listName, permission:'Owner',details:{ownedBy:'You',viewers:d.viewers,editors:d.editors}}})
+                shoppingLists = [...shoppingLists,...ownedListNames]
+            }
+            if(res.data.viewableLists){
+              const viewableListNames = res.data.viewableLists.map((d,i)=>{
+                return {listName:d.listName, permission:'View Only',details:{ownedBy:d.ownerEmail}}})
+                shoppingLists = [...shoppingLists,...viewableListNames]
+
+            }
+            if(res.data.editableLists){
+              const editableListNames = res.data.editableLists.map((d,i)=>{
+                return {listName:d.listName, permission:'Edit Only',details:{ownedBy:d.ownerEmail}}})
+                shoppingLists = [...shoppingLists,...editableListNames]
+
+            }
+              if(shoppingLists && shoppingLists.length > 0){
+                window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingLists))
+                setShoppingListNames(shoppingLists)
+              }
+              
            } 
            })
          } catch(e){
@@ -285,23 +369,24 @@ export default function ShoppingList(prop) {
 
     const setShoppingListTitle = (title) =>{
       if(title && title.trim() !== ''){
-        setShoppingList({...shoppingList,listName:title.trim()})
+        setShoppingList({...shoppingList,listName:title.trim(),permission:'Owner',ownedBy:prop.userEmail})
       } else{
         setOpenAlert({isOpen:true,status:'error',msg:'Invalid Title'})
       }
     }
 
-    const getShoppingListByName = async(listName) =>{
+    const getShoppingListByName = async(listDetails) =>{
       if(prop.userId !== '' && prop.userId !== null){
         try{
-          await axios.get(`${base_url}api/getshoppinglistbyname`,{params:{listName:listName},
+          await axios.get(`${base_url}api/getshoppinglistbyname`,{params:{listDetails:listDetails,email:prop.userEmail},
           headers: {
             Authorization: `Bearer ${prop.userId}`,
             Accept: 'application/json'
           }}).then((res)=>{
-           if(res && res.data && res.data.items){
-            window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:listName,items:[...res.data.items]}))
-             setShoppingList({listName:listName,items:[...res.data.items]})
+           if(res && res.data && res.data.length>0){
+            window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],permission:res.data[0].permission}))
+             setShoppingList({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],
+              permission:res.data[0].permission, ownedBy:res.data[0].ownedBy})
            } 
            })
          } catch(e){
@@ -315,13 +400,16 @@ export default function ShoppingList(prop) {
     const deleteList = async (option) =>{
       if(prop.userId !== '' && prop.userId !== null){
         try{
-          await axios.delete(`${base_url}api/deleteshoppinglistbyname`,{ params: { listName: option }, 
+          await axios.delete(`${base_url}api/deleteshoppinglistbyname`,{ params: { listName: option.listName }, 
           headers: { Authorization: `Bearer ${prop.userId}`,Accept: 'application/json'} })
           .then(function (res) {
-            if(res && res.status === 200 && res.data && res.data.acknowledged === true && res.data.deletedCount === 1){
-              const names = shoppingListNames.filter((name) => name !== option)
+            if(res && res.status === 200){
+              const names = shoppingListNames.filter((list) => list.listName !== option.listName)
               setShoppingListNames(names)
               window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(names))
+              window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[],permission:''}))
+              setShoppingList({listName:'',items:[],permission:'',ownedBy:''})
+              
             }  
         })
         } catch(e){
@@ -333,18 +421,32 @@ export default function ShoppingList(prop) {
     const clearAll = (isClear) =>{
       if(isClear){
         window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
-        setShoppingList({...shoppingList,items:[]})
+        setShoppingList({...shoppingList,items:[],permission:'',ownedBy:''})
       }
       setOpenDialog({isOpen:false,dialogType:'clear'})
+    }
+
+    const setpermissions = async(permission,emails,listName) =>{
+      try{
+        await axios.post(`${base_url}api/putcollaborator`,{colaboratorEmails:emails,permission:permission,
+          invitationDate:new Date(Date.now()),level:'shoppinglist',listName:listName,ownerEmail:prop.userEmail},
+          {headers: {
+            Authorization: `Bearer ${prop.userId}`,
+            Accept: 'application/json'}}).then((res)=>{
+          })
+      } catch (e){
+        console.log(e)
+      }
     }
 
     return(
         <div className="main" style={{display: 'flex',height:'80vh', flexDirection:'column'}}>
         <div className="layout" >
         <TableToolbar listName={shoppingList.listName} items = {shoppingList.items} setShoppingListTitle={setShoppingListTitle} 
-        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList}></TableToolbar>
+        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList} 
+        userId={prop.userId} setpermissions={setpermissions}></TableToolbar>
         <div className='presentlist'>
-        <ItemTable shoppingList={shoppingList.items} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'shoppingList'}/>
+        <ItemTable shoppingList={shoppingList.items} permission={shoppingList.permission} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'shoppingList'}/>
         <div style={{width:'95%'}}>
         {
           openAlert.isOpen &&
@@ -354,7 +456,7 @@ export default function ShoppingList(prop) {
           <div  className="shoppingfile-upload">
                 <Tooltip title='Save Shopping List' enterTouchDelay={0}>
                 <Button size="small" variant="contained" onClick={()=>{
-                  setUserShoppingList()
+                  shoppingList.ownedBy === prop.userEmail ?setUserShoppingList(): editOwnerShoppingList()
                 }}><AddBoxIcon size="small"/>{!isMobile && 'Save Shopping List'}</Button>
                 
               </Tooltip>
@@ -378,14 +480,22 @@ export default function ShoppingList(prop) {
           </div>
         </div>
         </div>
-        <div className="pastlist">
+        {
+          prop.userEmail && prop.userId && prop.accounts &&  prop.accounts.length > 0 &&
+          <InventoryFilters getUserGrocery ={getUserGrocery} accounts={prop.accounts} />
+        }
+        {
+          (details !== null || details !== undefined) &&
+          <div className="pastlist">
           <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
           changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
           header={shoppedHeader}/>
         </div>
+
+        }
         {
           openDialog.dialogType === 'simple'?
-          <SimpleDialog openDialog ={openDialog} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
+          <SimpleDialog openDialog ={openDialog.isOpen} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
           :openDialog.dialogType === 'clear' &&
           <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll}></ClearAllDialog>
         }

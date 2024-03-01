@@ -13,7 +13,7 @@ export default function Details(prop) {
     const [openDialog, setOpenDialog] = useState(false);
     const [details,setDetails] = useState(() => {
         const storedData = window.sessionStorage.getItem('details');
-        return storedData ? JSON.parse(storedData) : null;
+        return storedData ? JSON.parse(storedData).filter((s)=>s.account === prop.userEmail) : null;
       });
       const [dateRange,setDateRange] = useState(() => {
         const storedData = window.sessionStorage.getItem('daterange');
@@ -22,7 +22,7 @@ export default function Details(prop) {
     const [item =new Map(),setItem] = useState()
 
     useEffect(()=>{
-        if(details === null && prop.userId !== '' && prop.userId !== null){
+        if(details === null && prop.userId && prop.userId !== ''){
             getUserGrocery(null)
         }
         if(item && item.size >0 && details && details.length>0 ){
@@ -151,32 +151,43 @@ const getData =() =>{
    const getUserGrocery = async(dateRange) =>{
     if(details === null){
         try{
-            await axios.get(`${base_url}api/getallusergrocery`,{headers: {
-                Authorization: `Bearer ${prop.userId}`,
-                Accept: 'application/json'
-            }}).then((res)=>{
+            await axios.get(`${base_url}api/getallusersgrocery`,{
+              params:{userEmails:[prop.userEmail]},
+              headers: {
+              Authorization: `Bearer ${prop.userId}`,
+              Accept: 'application/json'
+          }}).then((res)=>{
             if(res && res.data.length > 0){
-                window.sessionStorage.setItem('details',JSON.stringify(res.data))
-                setDetails(res.data)
-            } else{
+              let data = res.data.map((inv)=> {return inv.inventories
+                .map((d)=> ({...d,account:inv.email.filter((e)=>e !== null)[0],permission:'Owner'}))
+                })
+                let list =[]
+                data.forEach((d,i)=>{
+                  list.push(...d)
+                })
+              window.sessionStorage.setItem('details',JSON.stringify(list))
+              setDetails(list)
+            }else{
                 window.sessionStorage.setItem('details',JSON.stringify([]))
                 setOpenAlert({isOpen:true,status:'error',msg:'No Details Found!'})
             }
             })
-        } catch(e){
+          } catch(e){
             console.log(e)
-        }
+          }
         dateRange && window.sessionStorage.removeItem('daterange')
         setDateRange(null)
     }else{
-        window.sessionStorage.getItem('details') && window.sessionStorage.getItem('details').length >0  
-        ? setDetails(JSON.parse(window.sessionStorage.getItem('details')).map((item,index)=> 
+        window.sessionStorage.getItem('details') && window.sessionStorage.getItem('details').length > 0  
+        ? setDetails(JSON.parse(window.sessionStorage.getItem('details'))
+        .filter((d)=>d.account === prop.userEmail)
+        .map((item,index)=> 
         ({count:item.count,name:item.name,qty:item.qty,details:item.details.filter((d,i)=>
             new Date(d.purchaseDate) >= new Date(dateRange.startDate) && 
             new Date(d.purchaseDate) <= new Date(dateRange.endDate))})).filter((m,i)=> m.details.length>0)) :
             setOpenAlert({isOpen:true,status:'error',msg:'No Details Found!'})
             window.sessionStorage.setItem('daterange',JSON.stringify({startDate:dateRange.startDate,endDate:dateRange.endDate}))
-        setDateRange({startDate:dateRange.startDate,endDate:dateRange.endDate})
+            setDateRange({startDate:dateRange.startDate,endDate:dateRange.endDate})
     }
     }
     

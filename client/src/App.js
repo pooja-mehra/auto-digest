@@ -5,10 +5,10 @@ import MainToolabr from './components/maintoolbar';
 export var UserContext = createContext(null);
 
 export default function App() {
-  const [userId,setUserId] = useState(null)
+  const [user,setUser] = useState(null)
 
-  const setUser = (user) =>{
-    setUserId(user.userId)
+  const setUserContext = (user) =>{
+    setUser(user)
   }
   useEffect(()=>{
     window.sessionStorage.removeItem('details')
@@ -17,8 +17,8 @@ export default function App() {
   })
 
   useEffect(()=>{
-    UserContext = createContext(userId)
-  },[userId])
+    UserContext = createContext(user)
+  },[user])
   
   return (
     <div>
@@ -26,9 +26,9 @@ export default function App() {
         <title><h4 id="title">TextExtractor</h4></title>
       </header>
       <main >
-        <MainToolabr setUser={setUser}>
+        <MainToolabr setUser={setUserContext} user={user}>
         </MainToolabr>
-          <UserContext.Provider value={userId}>
+          <UserContext.Provider value={user}>
             <HeaderTabs>
             </HeaderTabs>
           </UserContext.Provider>

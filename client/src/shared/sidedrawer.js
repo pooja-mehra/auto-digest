@@ -9,16 +9,17 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import MenuSharpIcon from '@mui/icons-material/MenuSharp';
 import ExitToAppSharpIcon from '@mui/icons-material/ExitToAppSharp';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export default function SideDrawer(props) {
-    const [state, setState] = useState(false)
-    const listItems = [{title:'SIGNOUT',icon:<ExitToAppSharpIcon/>,action:props.signout}]
+  const [state, setState] = useState(false)
+  const listItems = [{title:'Set Pemissions',icon:<AdminPanelSettingsIcon/>,action:props.showColaborationDialog},
+      {title:'SIGNOUT',icon:<ExitToAppSharpIcon/>,action:props.signout}]
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
       return;
     }
-
     setState(open);
   };
 

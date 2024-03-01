@@ -32,20 +32,21 @@ export default function HeaderTabs() {
             {
                 tabNumber === 0 &&
                 <UserContext.Consumer>
-                {value => <TextExtractor userId={value}/>}
+                {value => <TextExtractor userId={value?value.userId:null}/>}
                 </UserContext.Consumer>
             }
             {
                 tabNumber === 1 &&
                 <UserContext.Consumer>
-                {value => <Details userId={value}/>}
+                {value => <Details userId={value?value.userId:null} userEmail={value?value.email:null}/>}
                 </UserContext.Consumer>
                 
             }
             {
                 tabNumber === 2 &&
                 <UserContext.Consumer>
-                {value => <ShoppingList userId={value}/>}
+                {value => <ShoppingList userId={value?value.userId:null} userEmail={value?value.email:null}
+                accounts = {value?value.accounts:null}/>}
                 </UserContext.Consumer>
 
             }

@@ -6,11 +6,15 @@ import Avatar from '@mui/material/Avatar';
 import GoogleIcon from '@mui/icons-material/Google';
 import Chip from '@mui/material/Chip';
 import SideDrawer from '../shared/sidedrawer';
+import ColaborateDialog from '../shared/colaboratedialog';
+import { UserContext } from "../App"
 
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function MainToolabr(props){
-  const [user, setUser] = useState({email:'',avatar:'',userId:''})
+  const [user, setUser] = useState({email:'',avatar:'',userId:'', accounts:[]})
+  const [colborationDilaog,setColaborationDialog] = useState(false)
+  const [colaboratorDetails,setColaboratorDetails] = useState([])
 
   useEffect(()=>{
     props.setUser(user)
@@ -39,39 +43,84 @@ export default function MainToolabr(props){
 
   const confirmUser = async(email,picture,id) =>{
     try{  
-      await axios.post(`${base_url}api/confirmuser`,{email:email,creationDate:new Date(Date.now())},
+      let res = await axios.post(`${base_url}api/confirmuser`,{email:email,creationDate:new Date(Date.now())},
       {headers: {
         Authorization: `Bearer ${id}`,
         Accept: 'application/json'}
-      }).then((res)=>{
-       if(res && res.status === 200){
-        setUser({email:res.data.email,avatar:picture, userId:res.data._id})
-       }
       })
+       if(res && res.status === 200){
+        await getAccounts(res.data.email,res.data._id,picture)
+      }
     } catch(e){
       console.log(e)
     }
   }
-  const signout = async() =>{
-    console.log(user)
-    if(user && user.userId !== ''){
-      try{  
-        await axios.post(`${base_url}signout`).then((res)=>{
-         if(res && res.data && res.data.dbconnect === false){
-          window.sessionStorage.clear()
-          setUser({email:'',avatar:'',userId:''})
-         }
+
+  const getAccounts = async(userEmail,userId,picture) =>{
+    let accounts = [{email:'All',permission:''},{email:userEmail,permission:'Owner'}]
+    try{
+        await axios.get(`${base_url}api/getowneremail`,{
+            params:{email:userEmail},
+            headers: {
+            Authorization: `Bearer ${userId}`,
+            Accept: 'application/json'
+        }}).then((res)=>{
+            if(res && res.data && res.data.colaboratorDetails){
+              let data = res.data.colaboratorDetails.map((d)=>{return {email:d.ownerEmail,permission:d.details.filter((detail)=>detail.level === 'inventories')[0].permission}})
+                accounts = [...accounts,...data]
+            }
         })
+    } catch(e){
+        console.log(e)
+    }
+    setUser({email:userEmail,avatar:picture, userId:userId, accounts:accounts})
+
+     
+}
+  const signout = async() =>{
+    if(user && user.userId !== ''){
+      /*try{  
+        await axios.post(`${base_url}signout`).then((res)=>{
+         if(res && res.data && res.data.dbconnect === false){*/
+         setUser({email:'',avatar:'',userId:'', accounts:[]})
+          window.sessionStorage.clear()
+         /*}
+       })
       } catch(e){
         console.log(e)
-      }
+      }*/
     }
-    
   }
+  const showColaborationDialog = async() =>{
+    setColaborationDialog(true)
+  }
+
+  const setColaborateDialog = (isOpen,permission,emails,listName) =>{
+    if(permission && permission !== null && emails && emails.length>0 && props.user){
+      setInventoryPermission(permission,emails,props.user.userId,props.user.email)
+    }
+    setColaborationDialog(isOpen)
+  }
+  const setInventoryPermission = async(permission,emails,userId,userEmail) =>{
+    if(user && user.userId !== ''){
+      try{
+        await axios.post(`${base_url}api/setinventorycollaborator`,{colaboratorEmails:emails,permission:permission,
+          invitationDate:new Date(Date.now()),level:'inventories',ownerEmail:userEmail},
+          {headers: {
+            Authorization: `Bearer ${userId}`,
+            Accept: 'application/json'}}).then((res)=>{
+          })
+      } catch (e){
+        console.log(e)
+      }
+  }
+}
   return(
+    <div>
       <Toolbar style={{backgroundColor:'#482880'}}>
         <div style={{width: '100%',float: 'left'}}>
         <div style={{float:'left', backgroundColor:'#482880'}} >
+        <SideDrawer signout={signout} showColaborationDialog ={showColaborationDialog} />
         </div>
           <div style={{float:'right', backgroundColor:'#482880'}} >
           {
@@ -88,11 +137,21 @@ export default function MainToolabr(props){
             label='SIGN IN'
             variant="outlined"
             style={{color:'white' }}
+            id='googlelogin'
             onClick={() => login()}
           />
           }
           </div>
         </div>
+       
       </Toolbar>
+      {
+        colborationDilaog &&
+        <UserContext.Consumer>
+        {value => <ColaborateDialog colborationDilaog={colborationDilaog} setColaborateDialog={setColaborateDialog}
+        listName={null} colaboratorDetails={colaboratorDetails} userId={value?value.userId:null} userEmail={value?value.email:null}/>}
+        </UserContext.Consumer>
+      }
+      </div>
     );
 }
