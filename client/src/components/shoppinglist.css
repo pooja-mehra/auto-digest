@@ -10,7 +10,7 @@
   .pastlist{
     max-height: 70vh;
     min-height: 30vh;
-    height: 50vh;
+    height: auto;
   }
 
   .layout {
@@ -18,9 +18,8 @@
     flex-direction:column;
     margin-top: 1vh;
     max-height: 70vh;
-    min-height: 30vh;
+    min-height: 35vh;
     height: auto;
-
   }
 
   .shoppinglistFooter{
@@ -28,13 +27,15 @@
     display:flex;
     flex:'1';
     background-color: #482880;
-    height:auto;
+    height:max-content;
+    margin-bottom: 1vh;
+    margin-top: -1vh;
 }
 
   .shoppinglistFooter Button{
       margin:auto;
       width: calc(95vw / 3);
-      height:auto;
+      height:100%;
       background-color:#673ab7;
       color:white;
   }

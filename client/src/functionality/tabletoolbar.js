@@ -56,7 +56,7 @@ export default function TableToolbar(props){
        
   }
     return(
-        <div style={{width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
+        <div style={{display:'flex',width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
         <Autocomplete
         value={title}
         getOptionDisabled={(option) => listNames.includes(option.listName) && disable}
@@ -116,8 +116,8 @@ export default function TableToolbar(props){
                       </IconButton>
                     </div>
                   }
-                  <IconButton style={{marginRight:'10vw',marginLeft:'5vw'}}>
-                    <FolderSharedIcon/>
+                  <IconButton style={{marginLeft:'5vw'}}>
+                  <Chip label={option.permission}></Chip>
                   </IconButton>
                   </div>
                 }
@@ -125,7 +125,6 @@ export default function TableToolbar(props){
                     <ListItemButton>
                       <ListItemText primary={option.listName} />
                     </ListItemButton>
-                    <Chip label={option.permission}></Chip>
                   </ListItem>
             }
         freeSolo

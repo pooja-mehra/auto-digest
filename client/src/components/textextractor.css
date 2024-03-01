@@ -46,7 +46,7 @@
 .listFooter{
     position: sticky;  
     width:95vw;
-    height: auto;
+    height:max-content;
     margin:auto;
     margin-top: -1vh;
     background-color:#482880;
@@ -54,11 +54,9 @@
 }
 
 .listFooter Button, .capture Button{
-    padding-top:1vh;
-    height: auto;
+    height:100%;
     margin:auto;
     width: calc(95vw / 5);
-    height:auto;
     background-color:#673ab7;
     color:white;
 }

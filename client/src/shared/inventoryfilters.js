@@ -11,24 +11,27 @@ export default function InventoryFilters(props){
     },[selectedColaborator])
  
     return (
-        <div style={{width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
+        <div style={{display:'flex',width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
         <Autocomplete
+        fullWidth
         multiple
         limitTags={2}
         id="checkboxes-tags-demo"
         options={props.accounts.map((a)=>a.email)}
-        disableCloseOnSelect
         getOptionLabel={(option) => option}
         value={selectedColaborator}
         onChange={(e,v,r,d)=>{
-            if(d.option === 'All'){
-                r === 'selectOption' ? setSelectedColaborator([...props.accounts.map((a)=>a.email)]) :setSelectedColaborator([])
+            if(r === 'clear'){
+                setSelectedColaborator([])
             } else{
-                r === 'selectOption' ? setSelectedColaborator([...v])
-                : setSelectedColaborator(selectedColaborator.filter((s)=>s !== d.option && s !== 'All'))
+                if(d.option === 'All'){
+                    r === 'selectOption' ? setSelectedColaborator([...props.accounts.map((a)=>a.email)]) :setSelectedColaborator([])
+                } else{
+                    r === 'selectOption' ? setSelectedColaborator([...v])
+                    : setSelectedColaborator(selectedColaborator.filter((s)=>s !== d.option && s !== 'All'))
+                }
             }
         }}
-        
         style={{ width: 500 }}
         renderInput={(params) => (
             <TextField {...params} label="Accounts" placeholder="Select Accounts">

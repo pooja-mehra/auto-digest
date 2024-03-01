@@ -480,6 +480,7 @@ export default function ShoppingList(prop) {
           </div>
         </div>
         </div>
+        <div className="layout" >
         {
           prop.userEmail && prop.userId && prop.accounts &&  prop.accounts.length > 0 &&
           <InventoryFilters getUserGrocery ={getUserGrocery} accounts={prop.accounts} />
@@ -493,6 +494,7 @@ export default function ShoppingList(prop) {
         </div>
 
         }
+        </div>
         {
           openDialog.dialogType === 'simple'?
           <SimpleDialog openDialog ={openDialog.isOpen} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
