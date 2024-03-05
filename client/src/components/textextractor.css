@@ -54,7 +54,8 @@
 }
 
 .listFooter Button, .capture Button{
-    height:100%;
+    height:auto;
+    font-size: small;
     margin:auto;
     width: calc(95vw / 5);
     background-color:#673ab7;

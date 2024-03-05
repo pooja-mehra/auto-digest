@@ -150,7 +150,7 @@ export default function ItemTable(props) {
                               </TableCell>
                               <TableCell style={{color:'white',backgroundColor:'#673ab7',}}>Used:</TableCell>
                               <TableCell style={{color:'white'}} id={'used'+(i+(page*rowsPerPage))}>
-                              <input disabled={details.permission === 'view'} type="number" min ="0" max={details && details.qty} value={consumed?consumed.used:0} onChange={(e)=>{
+                              <input disabled={details && details.permission === 'view'} type="number" min ="0" max={details && details.qty} value={consumed?consumed.used:0} onChange={(e)=>{
                                 props.changeDetails(parseInt(e.target.value),details.qty - parseInt(e.target.value))}}/>
                               </TableCell>
                               <TableCell style={{backgroundColor:'#673ab7',color:'white'}}>Left:</TableCell>

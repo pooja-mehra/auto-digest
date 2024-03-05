@@ -296,16 +296,21 @@ export default function TextExtractor(prop) {
             <Tooltip title='Clear List' enterTouchDelay={0}>
             <Button size="small" variant="contained" onClick={()=>{
               setOpenDialog({isOpen:true,dialogType:'clear'})
-            }}><ClearIcon size="small"/>{!isMobile && 'Clear List'}</Button>
+            }}>
+            {!isMobile && 
+              <ClearIcon size="small"/>}
+            Clear List</Button>
             </Tooltip>
           </div>
           <div  className="file-upload">
             <Tooltip title='Upload Image of Reciept from Device' enterTouchDelay={0}>
             <Button size="small" variant="contained"
             onClick={()=>fileInputRef.current.click()}>
-            <UploadIcon size="small">
-            </UploadIcon>
-            {!isMobile &&  'Device Upload'}
+            {!isMobile &&  
+              <UploadIcon size="small">
+              </UploadIcon>
+            }
+            Device Upload
             </Button>
             <input
             type="file"
@@ -320,15 +325,21 @@ export default function TextExtractor(prop) {
           </div>
           <div className="camera">
             <Tooltip title='Take a Picture of Reciept' enterTouchDelay={0}>
-              <Button size="small" variant="contained" onClick = {()=> setOpen(!open)}>    
-              <PhotoCameraIcon size="small"></PhotoCameraIcon> 
-              {!isMobile && 'Capture Photo'}</Button>
+              <Button size="small" variant="contained" onClick = {()=> setOpen(!open)}> 
+              {!isMobile && 
+                <PhotoCameraIcon size="small"></PhotoCameraIcon> 
+              }   
+              Capture Reciept</Button>
             </Tooltip>
           </div>
           <div className="camera">
             <Tooltip title='Scan Barcode' enterTouchDelay={0}>
               <Button size="small" variant="contained"  onClick = {()=> setOpenScanner(!openScanner)}>
-              <QrCodeScannerIcon size="small"></QrCodeScannerIcon>{!isMobile && 'Scan Barcode'}</Button>  
+              {
+                !isMobile &&
+                <QrCodeScannerIcon size="small"></QrCodeScannerIcon>
+              }
+             Scan Barcode</Button>  
             </Tooltip>
           </div>
           <div className="file-upload">
@@ -337,7 +348,13 @@ export default function TextExtractor(prop) {
                 setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
                 prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
               }}>
-              <SaveIcon size="small"/>{!isMobile && 'Save Inventory'}</Button>
+
+              {
+                !isMobile &&
+                <SaveIcon size="small"/>
+                
+              }
+              Save Inventory</Button>
             </Tooltip>
           </div>
         </div>

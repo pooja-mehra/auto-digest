@@ -457,15 +457,22 @@ export default function ShoppingList(prop) {
                 <Tooltip title='Save Shopping List' enterTouchDelay={0}>
                 <Button size="small" variant="contained" onClick={()=>{
                   shoppingList.ownedBy === prop.userEmail ?setUserShoppingList(): editOwnerShoppingList()
-                }}><AddBoxIcon size="small"/>{!isMobile && 'Save Shopping List'}</Button>
-                
+                }}>
+                {!isMobile && 
+                  <AddBoxIcon size="small"/>
+                }
+                Save Shopping List</Button>
               </Tooltip>
             </div>
             <div  className="shoppingfile-upload">
                 <Tooltip title='Clear List' enterTouchDelay={0}>
                 <Button size="small"  variant="contained" onClick={()=>{
                   setOpenDialog({isOpen:true,dialogType:'clear'})
-                }}><ClearIcon size="small"/>{!isMobile && 'Clear List'}</Button>
+                }}>
+                {!isMobile && 
+                  <ClearIcon size="small"/>
+                }
+                Clear List</Button>
               </Tooltip>
             </div>
             <div className='shoppingfile-upload'>
@@ -473,7 +480,12 @@ export default function ShoppingList(prop) {
               <Button size="small" variant="contained" onClick={()=>{
                 setShoppingList({...shoppingList,items:shoppingList.items.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0)})
                 prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
-              }}><SaveIcon size="small"/>{!isMobile && 'Save Inventory'}</Button>
+              }}>
+              {
+                !isMobile && 
+                  <SaveIcon size="small"/>
+              }
+              Save Inventory</Button>
               </Tooltip>
             </div>
             </div>

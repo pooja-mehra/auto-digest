@@ -359,60 +359,82 @@ router.post('/putusergrocery', async (req, res, next) => {
     if(userId && userId[1] && mongoose.isValidObjectId(userId[1]) && purchaseDate && queryItems){
         userId = userId[1]
         const isoDate = getISODate(purchaseDate)
-    try{
-        let userInventories = await UserInventories.findOne({userId:userId})
-        if (userInventories && userInventories.inventories && userInventories.inventories.length>0) {
-            queryItems.forEach(async (item)=>{
-            let inventoryDetails = userInventories.inventories.filter((d)=>d.name === item.name)
-            if(inventoryDetails && inventoryDetails.length >0){
-                const dateExists = inventoryDetails[0].details.some(detail => 
-                    detail.purchaseDate.getTime() === new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()).getTime()
-                    );
-                    if (dateExists) {
-                    let details = await UserInventories.updateOne(
-                        { userId:userId, "inventories.name": item.name, 
-                        "inventories.details.purchaseDate": new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()) },
-                        {"$inc":{"inventories.$[outer].details.$[inner].qty": item.qty}},
-                                { arrayFilters: [  
-                                    { "outer.name": item.name},
-                                    {"inner.purchaseDate":new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate())}
-                                    ] }
-                        )
-                    } else {
-                    let details = await UserInventories.updateOne(
-                        { userId:userId, "inventories.name": item.name },
-                        { $push: { "inventories.$[outer].details": { purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty:item.qty },} },
-                        { arrayFilters: [  
-                            { "outer.name": item.name},
-                            ] }
-                        )
-                    }
-                } else{
-                let details = await UserInventories.updateOne(
-                        { userId:userId},
-                        {$push:{inventories:{
-                            name: item.name,
-                            used:0,
-                            details: [{ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty:item.qty }]
-                        }}}
-                        )
-                }
-            })
+        try {
+            let userInventories = await UserInventories.findOne({ userId: userId });
+        
+            if (!userInventories) {
+                // If userInventories doesn't exist, create new documents in bulk
+                const inventories = queryItems.map(item => ({
+                    name: item.name,
+                    used: 0,
+                    details: [{ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty: item.qty }]
+                }));
+        
+                await UserInventories.create({
+                    userId: userId,
+                    inventories: inventories
+                });
             } else {
-                let inventories = queryItems.map((item,i)=>{ return {name: item.name,used:0,
-                    details: [{ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), 
-                    qty:item.qty }]}
-                })
-                let details = await UserInventories.create({
-                userId:userId,
-                inventories:inventories
-                })
+                let bulkOperations = [];
+        
+                queryItems.forEach(item => {
+                    const inventoryDetails = userInventories.inventories.find(d => d.name === item.name);
+        
+                    if (inventoryDetails) {
+                        const dateExists = inventoryDetails.details.some(detail =>
+                            detail.purchaseDate.getTime() === new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()).getTime()
+                        );
+        
+                        if (dateExists) {
+                            // Increment qty if date exists
+                            bulkOperations.push({
+                                updateOne: {
+                                    filter: {
+                                        userId: userId,
+                                        "inventories.name": item.name,
+                                        "inventories.details.purchaseDate": new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate())
+                                    },
+                                    update: {
+                                        $inc: { "inventories.$[outer].details.$[inner].qty": item.qty }
+                                    },
+                                    arrayFilters: [
+                                        { "outer.name": item.name },
+                                        { "inner.purchaseDate": new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()) }
+                                    ]
+                                }
+                            });
+                        } else {
+                            // Push new detail if date doesn't exist
+                            bulkOperations.push({
+                                updateOne: {
+                                    filter: { userId: userId, "inventories.name": item.name },
+                                    update: { $push: { "inventories.$[outer].details": { purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty: item.qty } } },
+                                    arrayFilters: [{ "outer.name": item.name }]
+                                }
+                            });
+                        }
+                    } else {
+                        // Push new inventory if inventory doesn't exist
+                        bulkOperations.push({
+                            updateOne: {
+                                filter: { userId: userId },
+                                update: { $push: { inventories: { name: item.name, used: 0, details: [{ purchaseDate: new Date(isoDate.getFullYear(), isoDate.getMonth(), isoDate.getDate()), qty: item.qty }] } } }
+                            }
+                        });
+                    }
+                });
+        
+                if (bulkOperations.length > 0) {
+                    await UserInventories.bulkWrite(bulkOperations);
+                }
+            }
+        
+            res.json({ success: true });
+        } catch (e) {
+            console.error(e);
+            res.json({ success: false });
         }
-            res.json({success:true})
-
-        } catch(e){
-            res.json({success:false})
-        }
+        
     } 
 })
 router.get('/getallusersgrocery', async (req, res, next) => {
