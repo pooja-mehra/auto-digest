@@ -47,19 +47,22 @@ router.post('/editownershoppinglist', async(req,res,next)=>{
     try{
         let ownerData = await UserAccount.findOne({email: ownerEmail})
         if(ownerData && ownerData._id){
-            await UserShopping.updateOne({userId:ownerData._id,"shoppingLists.listName":listName,"shoppingLists.editors":editorEmail},
+            let shoppingData = await UserShopping.updateOne({userId:ownerData._id,"shoppingLists.listName":listName,"shoppingLists.editors":editorEmail},
             {$set: { "shoppingLists.$[outer].items":queryItems}},
             { arrayFilters: [  
                 { "outer.listName": listName},
             ] })
-            .then((data)=>{
-                res.json(data)
-            })
+            if(shoppingData && shoppingData.modifiedCount >0){
+                console.log(shoppingData)
+                res.json(shoppingData)
+            }else {
+                res.status(404).send(new Error('Shopping list not found or not editable by the editor.'));
+            }
         } else{
-            res.status(400).send(new Error('Bad Request'))
+            res.status(404).send(new Error('Owner account not found.'));
         }
     } catch(e){
-        res.status(400).send(new Error('Bad Request'))
+        res.status(500).send(new Error('Internal Server Error'));
     }
 
 })
