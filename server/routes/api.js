@@ -56,7 +56,7 @@ router.post('/editownershoppinglist', async(req,res,next)=>{
                 res.json(shoppingData)
             }
         } else{
-            res.status(404).send(new Error('Account Not Found'));
+            res.status(401).send(new Error('UnAuthorized'));
         }
     } catch(e){
         res.status(500).send(new Error('Internal Server Error'));
@@ -71,32 +71,31 @@ router.post('/putusershoppinglist', async (req, res, next) => {
         userId = userId[1]
         try{
             let userShopping = await UserShopping.findOne({userId:userId})
-                if(userShopping && userShopping.shoppingLists){
-                    let shoppingDetails = userShopping.shoppingLists.filter((d)=>d.listName === listName) 
-                    if(shoppingDetails && shoppingDetails.length >0){
-                        let updatedShoppingList = await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
-                        {$set: { "shoppingLists.$[outer].items":queryItems}},
-                        { arrayFilters: [  
-                            { "outer.listName": listName},
-                        ] })
-                        if(updatedShoppingList){
-                            res.json(updatedShoppingList)
-                        }
-                    } else{
-                        let newShoppingList = await UserShopping.updateOne({userId:userId},
-                        {$push: {shoppingLists:{listName:listName,items:queryItems}}})
-                        if(newShoppingList){
-                            res.json(newShoppingList)
-                        }
-                    }
+            if(userShopping && userShopping.shoppingLists){
+                let shoppingDetails = userShopping.shoppingLists.filter((d)=>d.listName === listName) 
+                if(shoppingDetails && shoppingDetails.length >0){
+                    await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
+                    {$set: { "shoppingLists.$[outer].items":queryItems}},
+                    { arrayFilters: [  
+                        { "outer.listName": listName},
+                    ] }).then((updatedShoppingList)=>{
+                        res.json(updatedShoppingList)
+                    })
                 } else{
+                    await UserShopping.updateOne({userId:userId},
+                    {$push: {shoppingLists:{listName:listName,items:queryItems}}})
+                    .then((newShoppingList)=>{
+                        res.json(newShoppingList)
+                    })
+                }
+            } else{
                     let firstShoppingList = await UserShopping.create({userId:userId,shoppingLists:[{listName:listName,items:queryItems}]})
                     if(firstShoppingList){
                         res.json(newShoppingList)
                     }
                 }
         } catch(e){
-            res.status(404).send(new Error('Account Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     } else{
         res.status(401).send(new Error('UnAuthorized'))
@@ -134,7 +133,7 @@ router.get('/getusershoppinglistnames', async (req,res,next)=>{
             }
             res.json(listNames)
         } catch(e){
-            res.status(401).send(new Error('Data Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     }else{
         res.status(401).send(new Error('UnAuthorized'))
@@ -161,7 +160,7 @@ router.delete('/deleteshoppinglistbyname', async (req,res,next)=>{
             }
             res.json({status:200})
         } catch(e){
-            res.status(404).send(new Error('List Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     }else{
         res.status(401).send(new Error('UnAuthorized'))
@@ -268,85 +267,84 @@ router.post('/setinventorycollaborator', async (req, res, next) => {
     if(mongoose.isValidObjectId(ownerId[1]) && ownerId && ownerId[1]) {
         ownerId = ownerId[1]
         try{
-            colaboratorEmails.forEach(async (email)=>{    
-                await UserAccount.findOne({email:email}).then( async(userExists)=>{
-                    if(userExists){
-                        if(userExists.isColaborator === true){
-                            //iscolaborator with same owner and list modify else push new 
-                            let index = -1
-                            userExists.colaboratorDetails.filter((d,i)=>{
-                                if(d.ownerId == ownerId){
-                                    index = i}})
-                            if(index !== -1){
-                                let levelExists = userExists.colaboratorDetails[index].details.map((d,i)=> d.level).includes(level)
-                                if(levelExists){
-                                    await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
-                                    {"$set":{"colaboratorDetails.$[outer].details.$[].permission": permission}},
-                                    { arrayFilters: [  
-                                        { "outer.ownerId": new ObjectId(ownerId)},
-                                        { "level":level} ] }
-                                ).then(async (data)=>{
-                                    if(data && data.acknowledged && data.modifiedCount > 0){
-                                        await editInventoryPermission(permission,ownerId,email)
-                                    }
-                                })
-                                } else{
-                                    await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
-                                    {$push:{"colaboratorDetails.$[outer].details":{permission:permission,level:level}}},
-                                    { arrayFilters: [  
-                                        { "outer.ownerId": new ObjectId(ownerId)}] }
-                                    ).then(async (data)=>{
-                                    if(data && data.acknowledged && data.modifiedCount > 0){
-                                        await addInventoryPermission(permission,ownerId,email)
-                                    }
-                                })
+            let userExists = colaboratorEmails.forEach(async (email)=>{    
+                await UserAccount.findOne({email:email})
+                if(!userExists){
+                    await UserColaboration.updateOne({ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,level:level, shoppinglistName:listName},
+                        { $set: { invitationDate: invitationDate,permission:permission} },
+                        {upsert:true,$setOnInsert: { ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,
+                        invitationDate: invitationDate,permission:permission, level:level} })
+                        .then(async(data)=>{
+                            /*await msgQueue.add({ data: {receiverEmail:email, 
+                                subject:`${ownerEmail} has sent a request to collaborate on auto-digest`,
+                                template:"emailtemplate",
+                                context: {
+                                    ownerEmail:ownerEmail,
+                                    listName:listName,
+                                    permission:permission,
+                                    company: 'auto-digest',
+                                    accept:`http://localhost:3000/`
+                                }}},
+                                );*/
+                        })
+                } else{
+                    if(userExists.isColaborator === true){
+                        let index = -1
+                        userExists.colaboratorDetails.filter((d,i)=>{
+                            if(d.ownerId == ownerId){
+                                index = i}})
+                        if(index !== -1){
+                            let levelExists = userExists.colaboratorDetails[index].details.map((d,i)=> d.level).includes(level)
+                            if(levelExists){
+                                await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
+                                {"$set":{"colaboratorDetails.$[outer].details.$[].permission": permission}},
+                                { arrayFilters: [  
+                                    { "outer.ownerId": new ObjectId(ownerId)},
+                                    { "level":level} ] }
+                            ).then(async (data)=>{
+                                if(data && data.acknowledged && data.modifiedCount > 0){
+                                    await editInventoryPermission(permission,ownerId,email)
                                 }
-                               
+                            })
                             } else{
-                                await UserAccount.updateOne({email:email},
-                                    {$push:{colaboratorDetails:{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,permission:permission}]}}}
+                                await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
+                                {$push:{"colaboratorDetails.$[outer].details":{permission:permission,level:level}}},
+                                { arrayFilters: [  
+                                    { "outer.ownerId": new ObjectId(ownerId)}] }
                                 ).then(async (data)=>{
-                                    if(data && data.acknowledged && data.modifiedCount > 0){
-                                        await addInventoryPermission(permission,ownerId,email)
-                                    }
-                                })
-                            }  
-                        } else{
-                            await UserAccount.updateOne({email:email},
-                                {isColaborator:true,colaboratorDetails:[{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,permission:permission}]}]}
-                            ).then( async (data)=>{
                                 if(data && data.acknowledged && data.modifiedCount > 0){
                                     await addInventoryPermission(permission,ownerId,email)
                                 }
                             })
-                        }
-                    } else{
-                        await UserColaboration.updateOne({ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,level:level, shoppinglistName:listName},
-                            { $set: { invitationDate: invitationDate,permission:permission} },
-                            {upsert:true,$setOnInsert: { ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,
-                            invitationDate: invitationDate,permission:permission, level:level} })
-                            .then(async(data)=>{
-                                /*await msgQueue.add({ data: {receiverEmail:email, 
-                                    subject:`${ownerEmail} has sent a request to collaborate on auto-digest`,
-                                    template:"emailtemplate",
-                                    context: {
-                                        ownerEmail:ownerEmail,
-                                        listName:listName,
-                                        permission:permission,
-                                        company: 'auto-digest',
-                                        accept:`http://localhost:3000/`
-                                    }}},
-                                    );*/
+                            }
+                           
+                        } else{
+                            await UserAccount.updateOne({email:email},
+                                {$push:{colaboratorDetails:{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,permission:permission}]}}}
+                            ).then(async (data)=>{
+                                if(data && data.acknowledged && data.modifiedCount > 0){
+                                    await addInventoryPermission(permission,ownerId,email)
+                                }
                             })
+                        }  
+                    } else{
+                        await UserAccount.updateOne({email:email},
+                            {isColaborator:true,colaboratorDetails:[{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,permission:permission}]}]}
+                        ).then( async (data)=>{
+                            if(data && data.acknowledged && data.modifiedCount > 0){
+                                await addInventoryPermission(permission,ownerId,email)
+                            }
+                        })
                     }
-                })          
+
+                }         
             })
             res.json({success:true})
         } catch(e){
             res.json({success:false})
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 router.post('/putusergrocery', async (req, res, next) => {
@@ -430,7 +428,9 @@ router.post('/putusergrocery', async (req, res, next) => {
             res.json({ success: false });
         }
         
-    } 
+    } else{
+        res.status(401).send(new Error('UnAuthorized'))
+    }
 })
 router.get('/getallusersgrocery', async (req, res, next) => {
     const {userEmails} = req.query
@@ -477,14 +477,14 @@ router.get('/getallusersgrocery', async (req, res, next) => {
                             res.json(inventories)
                         }
             } catch(e){
-                res.status(402).send(new Error('Inventories Not Found'))
+                res.status(500).send(new Error('Internal Server Error'))
             }
            }
         } catch(e){
-            res.status(402).send(new Error('User Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     } else{
-        res.status(500).send(new Error('Internal Server Error'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
     });
 
@@ -525,10 +525,10 @@ router.get('/getallusergrocery', (req, res, next) => {
                         res.json(inventories)
                     }
         } catch(e){
-            res.status(402).send(new Error('Inventories Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     } else{
-        res.status(500).send(new Error('Internal Server Error'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
     });
 
@@ -565,10 +565,10 @@ router.post('/updateusergrocerybyname', async(req,res,next)=>{
             }
             
         } catch(e){
-            res.status(402).send(new Error('Account Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     } else{
-        res.status(500).send(new Error('Internal Server Error'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
     
 })
@@ -583,10 +583,10 @@ router.get('/getscannedgrocerybycode', async(req,res,next)=>{
 
             }
         }catch(e){
-            res.status(402).send(new Error('Description Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     } else{
-        res.status(500).send(new Error('Internal Server Error'))
+        res.status(400).send(new Error('Bad Request'))
     }   
 })
 
@@ -648,10 +648,10 @@ router.post('/confirmuser', async(req, res, next) => {
                 }
             })
         } catch(e){
-            res.status(402).send(new Error('Account Not Created'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     } else{
-        res.status(500).send(new Error('Internal Server Error'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 
@@ -665,10 +665,10 @@ router.get('/getcolaboratorsemail', (req,res,next)=>{
                 res.json(data)
             })
         } catch(e){
-            res.status(402).send(new Error('User Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     }else{
-        res.status(500).send(new Error('Internal Server Error'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 
@@ -685,7 +685,7 @@ router.get('/getowneremail', (req,res,next)=>{
                 res.json(data)
             })
         } catch(e){
-            res.status(404).send(new Error('Account Not Found'))
+            res.status(500).send(new Error('Internal Server Error'))
         }
     }else{
         res.status(401).send(new Error('UnAuthorized'))
@@ -828,7 +828,7 @@ router.post('/putcollaborator', async (req, res, next) => {
             res.json({success:false})
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 
