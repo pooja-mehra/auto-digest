@@ -52,14 +52,11 @@ router.post('/editownershoppinglist', async(req,res,next)=>{
             { arrayFilters: [  
                 { "outer.listName": listName},
             ] })
-            if(shoppingData && shoppingData.modifiedCount >0){
-                console.log(shoppingData)
+            if(shoppingData){
                 res.json(shoppingData)
-            }else {
-                res.status(404).send(new Error('Shopping list not found or not editable by the editor.'));
             }
         } else{
-            res.status(404).send(new Error('Owner account not found.'));
+            res.status(404).send(new Error('Account Not Found'));
         }
     } catch(e){
         res.status(500).send(new Error('Internal Server Error'));
@@ -77,34 +74,32 @@ router.post('/putusershoppinglist', async (req, res, next) => {
                 if(userShopping && userShopping.shoppingLists){
                     let shoppingDetails = userShopping.shoppingLists.filter((d)=>d.listName === listName) 
                     if(shoppingDetails && shoppingDetails.length >0){
-                        await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
+                        let updatedShoppingList = await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
                         {$set: { "shoppingLists.$[outer].items":queryItems}},
                         { arrayFilters: [  
                             { "outer.listName": listName},
                         ] })
-                        .then((data)=>{
-                            res.json(data)
-                        })
+                        if(updatedShoppingList){
+                            res.json(updatedShoppingList)
+                        }
                     } else{
-                        await UserShopping.updateOne({userId:userId},
+                        let newShoppingList = await UserShopping.updateOne({userId:userId},
                         {$push: {shoppingLists:{listName:listName,items:queryItems}}})
-                        .then((data)=>{
-                            res.json(data)
-                        })
+                        if(newShoppingList){
+                            res.json(newShoppingList)
+                        }
                     }
-                    
                 } else{
-                    await UserShopping.create({userId:userId,shoppingLists:[{listName:listName,items:queryItems}]})
-                    .then((data)=>{
-                        res.json(data)
-                    })
+                    let firstShoppingList = await UserShopping.create({userId:userId,shoppingLists:[{listName:listName,items:queryItems}]})
+                    if(firstShoppingList){
+                        res.json(newShoppingList)
+                    }
                 }
-            
         } catch(e){
-            console.log(e)
+            res.status(404).send(new Error('Account Not Found'))
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 
@@ -139,10 +134,10 @@ router.get('/getusershoppinglistnames', async (req,res,next)=>{
             }
             res.json(listNames)
         } catch(e){
-            console.log(e)
+            res.status(401).send(new Error('Data Not Found'))
         }
     }else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 
@@ -163,15 +158,13 @@ router.delete('/deleteshoppinglistbyname', async (req,res,next)=>{
                         { arrayFilters: [  
                             {"outer.ownerId": userId}
                         ] })
-                        .then((data)=>{
-                        })
             }
             res.json({status:200})
         } catch(e){
-            console.log(e)
+            res.status(404).send(new Error('List Not Found'))
         }
     }else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 
@@ -246,15 +239,15 @@ router.get('/getshoppinglistbyname', async (req,res,next)=>{
                         res.json(data)
                     })
                 } else{
-                    res.status(401).send(new Error('Unauthorized'))
+                    res.status(404).send(new Error('Account Not Found'))
                 }
                 }
                 
             } catch(e){
-                console.log(e)
+                res.status(404).send(new Error('Details Not Found'))
             }
         }else{
-            res.status(400).send(new Error('Bad Request'))
+            res.status(401).send(new Error('Unauthorized'))
         }
 })
 
@@ -434,7 +427,6 @@ router.post('/putusergrocery', async (req, res, next) => {
         
             res.json({ success: true });
         } catch (e) {
-            console.error(e);
             res.json({ success: false });
         }
         
@@ -453,7 +445,7 @@ router.get('/getallusersgrocery', async (req, res, next) => {
                 return { $cond: { if: { $eq: ["$userId", value._id] }, then: value.email, else: "$$REMOVE"} };
             });
             try{
-                await UserInventories.aggregate([
+                let inventories = await UserInventories.aggregate([
                 { $match:{userId: {$in:userIds}}},
                 {
                     $project:{
@@ -481,18 +473,18 @@ router.get('/getallusersgrocery', async (req, res, next) => {
                           },
                         _id:0,email:conditions} }
                         ])
-                        .then((data) => {
-                            res.json(data)
-                        })
+                        if(inventories){
+                            res.json(inventories)
+                        }
             } catch(e){
-                console.log(e)
+                res.status(402).send(new Error('Inventories Not Found'))
             }
            }
         } catch(e){
-            console.log(e)
+            res.status(402).send(new Error('User Not Found'))
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(500).send(new Error('Internal Server Error'))
     }
     });
 
@@ -502,7 +494,7 @@ router.get('/getallusergrocery', (req, res, next) => {
     if (userId && userId[1] && mongoose.isValidObjectId(userId[1])) { 
         userId = userId[1]
         try{
-            UserInventories.aggregate([
+            let inventories = UserInventories.aggregate([
             { $match:{userId: new ObjectId(userId)}},
             {
                 $project:{
@@ -529,14 +521,14 @@ router.get('/getallusergrocery', (req, res, next) => {
                         }
                       },
                     _id:0} }])
-                    .then((data) => {
-                        res.json(data)
-                    })
+                    if(inventories){
+                        res.json(inventories)
+                    }
         } catch(e){
-            console.log(e)
+            res.status(402).send(new Error('Inventories Not Found'))
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(500).send(new Error('Internal Server Error'))
     }
     });
 
@@ -550,29 +542,33 @@ router.post('/updateusergrocerybyname', async(req,res,next)=>{
                 let user = await UserAccount.findOne({email:account})
                 if(user){
                     userId = user._id
-                    await UserInventories.updateOne({userId:new ObjectId(userId),"inventories.name":name,
+                    let editor = await UserInventories.updateOne({userId:new ObjectId(userId),"inventories.name":name,
                         "$in":{editors:email}},
-                    {"$set":{"inventories.$[outer].used": used}},
-                    { arrayFilters: [  
-                        { "outer.name": name}
-                    ] })
-                    .then((data)=>{res.json(data)})
+                        {"$set":{"inventories.$[outer].used": used}},
+                        { arrayFilters: [  
+                            { "outer.name": name}
+                        ]})
+                    if(editor){
+                        res.json(editor)
+                    }
                 }
             }
             else{
-                await UserInventories.updateOne({userId:new ObjectId(userId),"inventories.name":name},
-                {"$set":{"inventories.$[outer].used": used}},
-                    { arrayFilters: [  
-                        { "outer.name": name}
-                ] })
-                .then((data)=>{res.json(data)})
+                let owner = await UserInventories.updateOne({userId:new ObjectId(userId),"inventories.name":name},
+                    {"$set":{"inventories.$[outer].used": used}},
+                        { arrayFilters: [  
+                            { "outer.name": name}
+                    ]})
+                if(owner){
+                    res.json(owner)
+                }
             }
             
         } catch(e){
-            console.log(e)
+            res.status(402).send(new Error('Account Not Found'))
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(500).send(new Error('Internal Server Error'))
     }
     
 })
@@ -581,14 +577,16 @@ router.get('/getscannedgrocerybycode', async(req,res,next)=>{
     const {code} = req.query
     if(code){
         try{
-            await ScannedGroceries.findOne({code:code}).then((data)=>{
-                res.json(data)
-            })
+            let scannedgrocery = await ScannedGroceries.findOne({code:code})
+            if(scannedgrocery){
+                res.json(scannedgrocery)
+
+            }
         }catch(e){
-            console.log(e)
+            res.status(402).send(new Error('Description Not Found'))
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(500).send(new Error('Internal Server Error'))
     }   
 })
 
@@ -617,12 +615,14 @@ async function getNewUserColaborationData(data,email){
     })  
     return colaboratorDataMap
 }
+
 router.post('/confirmuser', async(req, res, next) => {
     const {email, creationDate} = req.body
     let googleId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
     if(email && creationDate && googleId && googleId[1]){
         try{
-            await UserAccount.findOne({email:email},{email:1,isColaborator:1,colaboratorDetails:1}).then( async(data)=>{
+            await UserAccount.findOne({email:email},{email:1,isColaborator:1,colaboratorDetails:1})
+            .then( async(data)=>{
                 if(data && data.email){
                     res.json(data)
                 }else{
@@ -633,24 +633,25 @@ router.post('/confirmuser', async(req, res, next) => {
                             let colaboratorDataMap = await getNewUserColaborationData(data,email)
                             colaboratorDetails =colaboratorDataMap.get('colaboratorDetails').colaboratorDetails
                             isColaborator = true
+                            await UserColaboration.deleteMany({colaboratorEmail:email})
                         }
-                    await UserAccount.create({
+                    let newUser = await UserAccount.create({
                         email:email,
                         creationDate: new Date(Date.now()),
                         isColaborator:isColaborator,
                         colaboratorDetails:colaboratorDetails
-                    }).then((data)=>{
-                        res.json(data)
                     })
-                    await UserColaboration.deleteMany({colaboratorEmail:email})
+                    if(newUser){
+                        res.json(newUser)
+                    }
                     })
                 }
             })
         } catch(e){
-            console.log(e)
+            res.status(402).send(new Error('Account Not Created'))
         }
     } else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(500).send(new Error('Internal Server Error'))
     }
 })
 
@@ -664,10 +665,10 @@ router.get('/getcolaboratorsemail', (req,res,next)=>{
                 res.json(data)
             })
         } catch(e){
-            console.log(e)
+            res.status(402).send(new Error('User Not Found'))
         }
     }else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(500).send(new Error('Internal Server Error'))
     }
 })
 
@@ -684,10 +685,10 @@ router.get('/getowneremail', (req,res,next)=>{
                 res.json(data)
             })
         } catch(e){
-            console.log(e)
+            res.status(404).send(new Error('Account Not Found'))
         }
     }else{
-        res.status(400).send(new Error('Bad Request'))
+        res.status(401).send(new Error('UnAuthorized'))
     }
 })
 
