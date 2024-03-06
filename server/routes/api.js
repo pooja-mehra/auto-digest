@@ -6,15 +6,16 @@ const UserShopping = require('../models/usershoppinglist')
 const UserAccount = require('../models/useraccount')
 const UserColaboration = require('../models/tempcollaboration')
 const mongoose = require('mongoose');
-//const nodemailer = require("nodemailer");
+const nodemailer = require("nodemailer");
 const ObjectId = mongoose.Types.ObjectId;
-//const Queue = require('bull')
+const Queue = require('bull')
 require('dotenv').config();
-//const msgQueue = new Queue('msgqueue', process.env.REDDIS_URL);
-//const hbs = require('nodemailer-express-handlebars')
+const msgQueue = new Queue('msgqueue', process.env.REDDIS_URL);
+const hbs = require('nodemailer-express-handlebars')
 const path = require('path');
+const client_url = process.env.REACT_APP_CLIENT_URL
 
-/*const handlebarOptions = {
+const handlebarOptions = {
     viewEngine: {
         partialsDir: path.resolve('./shared/'),
         defaultLayout: false,
@@ -34,7 +35,7 @@ let transporter = nodemailer.createTransport({
     },
    });
 
-transporter.use('compile', hbs(handlebarOptions))*/
+transporter.use('compile', hbs(handlebarOptions))
 
 function getISODate(date){
     const dateParts = new Date(date).toLocaleDateString("en-US").split('/');
@@ -74,10 +75,11 @@ router.post('/putusershoppinglist', async (req, res, next) => {
             if(userShopping && userShopping.shoppingLists){
                 let shoppingDetails = userShopping.shoppingLists.filter((d)=>d.listName === listName) 
                 if(shoppingDetails && shoppingDetails.length >0){
-                    await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
-                    {$set: { "shoppingLists.$.items":queryItems}}).then((updatedShoppingList)=>{
+                let updatedShoppingList = await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
+                    {$set: { "shoppingLists.$.items":queryItems}})
+                    if(updatedShoppingList){
                         res.json(updatedShoppingList)
-                    })
+                    }
                 } else{
                     await UserShopping.updateOne({userId:userId},
                     {$push: {shoppingLists:{listName:listName,items:queryItems}}})
@@ -272,7 +274,7 @@ router.post('/setinventorycollaborator', async (req, res, next) => {
                         {upsert:true,$setOnInsert: { ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,
                         invitationDate: invitationDate,permission:permission, level:level} })
                         .then(async(data)=>{
-                            /*await msgQueue.add({ data: {receiverEmail:email, 
+                            await msgQueue.add({ data: {receiverEmail:email, 
                                 subject:`${ownerEmail} has sent a request to collaborate on auto-digest`,
                                 template:"emailtemplate",
                                 context: {
@@ -280,9 +282,9 @@ router.post('/setinventorycollaborator', async (req, res, next) => {
                                     listName:listName,
                                     permission:permission,
                                     company: 'auto-digest',
-                                    accept:`http://localhost:3000/`
+                                    accept:client_url
                                 }}},
-                                );*/
+                                );
                         })
                 } else{
                     if(userExists.isColaborator === true){
@@ -805,7 +807,7 @@ router.post('/putcollaborator', async (req, res, next) => {
                             {upsert:true,$setOnInsert: { ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,
                             invitationDate: invitationDate,permission:permission, level:level, shoppinglistName:listName} })
                             .then(async(data)=>{
-                                /*await msgQueue.add({ data: {receiverEmail:email, 
+                                await msgQueue.add({ data: {receiverEmail:email, 
                                     subject:`${ownerEmail} has sent a request to collaborate on auto-digest`,
                                     template:"emailtemplate",
                                     context: {
@@ -813,9 +815,9 @@ router.post('/putcollaborator', async (req, res, next) => {
                                         listName:listName,
                                         permission:permission,
                                         company: 'auto-digest',
-                                        accept:`http://localhost:3000/`
+                                        accept:client_url
                                     }}},
-                                    );*/
+                                );
                             })
                     }
                 })          
@@ -829,7 +831,7 @@ router.post('/putcollaborator', async (req, res, next) => {
     }
 })
 
-/*msgQueue.process(async (job,done) => {
+msgQueue.process(async (job,done) => {
     const {receiverEmail,subject,template,context } = job.data.data;
     let mailOptions = {
         from: process.env.EMAIL,
@@ -841,16 +843,15 @@ router.post('/putcollaborator', async (req, res, next) => {
      
     transporter.sendMail(mailOptions, function (err, data) {
         if (err) {
-
+            console.log(err)
         } else {
             done()
-            
         }
       });
 }).catch((e) => console.log(`Something went wrong: ${e}`));
 
 msgQueue.on('completed', function (job, result) {
     job.remove()
-})*/
+})
   
 module.exports = router;
