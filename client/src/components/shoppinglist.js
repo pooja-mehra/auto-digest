@@ -283,8 +283,6 @@ export default function ShoppingList(prop) {
             )
           .then((res)=>{
             if(res && res.status === 200 && res.data && res.data.acknowledged === true){
-              window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
-              setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
               setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
               getUserShoppingListNames()
             }
@@ -309,8 +307,6 @@ export default function ShoppingList(prop) {
             )
           .then((res)=>{
             if(res && res.status === 200 && res.data && res.data.acknowledged === true){
-              window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
-              setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
               setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
               getUserShoppingListNames()
             }
@@ -421,7 +417,7 @@ export default function ShoppingList(prop) {
     const clearAll = (isClear) =>{
       if(isClear){
         window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
-        setShoppingList({...shoppingList,items:[],permission:'',ownedBy:''})
+        setShoppingList({...shoppingList,items:[]})
       }
       setOpenDialog({isOpen:false,dialogType:'clear'})
     }

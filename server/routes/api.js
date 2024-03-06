@@ -73,8 +73,8 @@ router.post('/putusershoppinglist', async (req, res, next) => {
         try{
             let userShopping = await UserShopping.findOne({userId:userId})
             if(userShopping && userShopping.shoppingLists){
-                let shoppingDetails = userShopping.shoppingLists.filter((d)=>d.listName === listName) 
-                if(shoppingDetails && shoppingDetails.length >0){
+                let listDetails = userShopping.shoppingLists.find((d)=>d.listName === listName) 
+                if(listDetails){
                 let updatedShoppingList = await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
                     {$set: { "shoppingLists.$.items":queryItems}})
                     if(updatedShoppingList){
