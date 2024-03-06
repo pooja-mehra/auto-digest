@@ -75,10 +75,7 @@ router.post('/putusershoppinglist', async (req, res, next) => {
                 let shoppingDetails = userShopping.shoppingLists.filter((d)=>d.listName === listName) 
                 if(shoppingDetails && shoppingDetails.length >0){
                     await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
-                    {$set: { "shoppingLists.$[outer].items":queryItems}},
-                    { arrayFilters: [  
-                        { "outer.listName": listName},
-                    ] }).then((updatedShoppingList)=>{
+                    {$set: { "shoppingLists.$.items":queryItems}}).then((updatedShoppingList)=>{
                         res.json(updatedShoppingList)
                     })
                 } else{
