@@ -47,7 +47,9 @@ router.post('/editownershoppinglist', async(req,res,next)=>{
     const {listName, queryItems, editorEmail, ownerEmail} = req.body
     try{
         let ownerData = await UserAccount.findOne({email: ownerEmail})
-        if(ownerData && ownerData._id){
+        if(!ownerData){
+            res.status(401).send(new Error('UnAuthorized'));
+        } else{
             let shoppingData = await UserShopping.updateOne({userId:ownerData._id,"shoppingLists.listName":listName,"shoppingLists.editors":editorEmail},
             {$set: { "shoppingLists.$[outer].items":queryItems}},
             { arrayFilters: [  
@@ -56,8 +58,6 @@ router.post('/editownershoppinglist', async(req,res,next)=>{
             if(shoppingData){
                 res.json(shoppingData)
             }
-        } else{
-            res.status(401).send(new Error('UnAuthorized'));
         }
     } catch(e){
         res.status(500).send(new Error('Internal Server Error'));
@@ -72,11 +72,19 @@ router.post('/putusershoppinglist', async (req, res, next) => {
         userId = userId[1]
         try{
             let userShopping = await UserShopping.findOne({userId:userId})
-            if(userShopping && userShopping.shoppingLists){
+            if(!userShopping){
+                let firstShoppingList = await UserShopping.create({userId:userId,shoppingLists:[{listName:listName,items:queryItems}]})
+                    if(firstShoppingList){
+                        res.json(newShoppingList)
+                    }
+            } else{
                 let listDetails = userShopping.shoppingLists.find((d)=>d.listName === listName) 
-                if(listDetails){
+                if(listDetails !== undefined){
                 let updatedShoppingList = await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
-                    {$set: { "shoppingLists.$.items":queryItems}})
+                    {$set: { "shoppingLists.$[outer].items":queryItems}},
+                    {arrayFilters: [  
+                        { "outer.listName": listName},
+                    ] })
                     if(updatedShoppingList){
                         res.json(updatedShoppingList)
                     }
@@ -87,12 +95,7 @@ router.post('/putusershoppinglist', async (req, res, next) => {
                         res.json(newShoppingList)
                     })
                 }
-            } else{
-                    let firstShoppingList = await UserShopping.create({userId:userId,shoppingLists:[{listName:listName,items:queryItems}]})
-                    if(firstShoppingList){
-                        res.json(newShoppingList)
-                    }
-                }
+            }
         } catch(e){
             res.status(500).send(new Error('Internal Server Error'))
         }
