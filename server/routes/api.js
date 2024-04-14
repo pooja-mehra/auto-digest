@@ -17,14 +17,19 @@ const client_url = process.env.REACT_APP_CLIENT_URL
 const Buffer = require('buffer').Buffer
 const WebSocket = require('ws');
 const http = require('http')
-const server = http.createServer(express)
 var Redis = require('ioredis');
 var redis = new Redis();
 var pub = new Redis();
-const server_url = process.env.REACT_APP_BASE_URL
+var server = http.createServer(function(request, response) {
+    response.writeHead(404);
+    response.end();
+});
+server.listen(8081, function() {
+    console.log((new Date()) + ' Server is listening on port 8081');
+});
 const wss = new WebSocket.Server({
-    port:8081,
-   });
+    server: server
+  });
 const clients = {}
 
 wss.on('connection', (ws) => {
