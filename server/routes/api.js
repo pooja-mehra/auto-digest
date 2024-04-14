@@ -19,7 +19,10 @@ const WebSocket = require('ws');
 var Redis = require('ioredis');
 var redis = new Redis();
 var pub = new Redis();
-const wss = new WebSocket.Server({ port: 8081 });
+const wss = new WebSocket.Server({ port: 8081 ,cors: {
+    origin: client_url,
+    methods: ["GET", "POST"]
+  }});
 const clients = {}
 
 wss.on('connection', (ws) => {
