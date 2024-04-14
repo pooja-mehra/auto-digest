@@ -16,12 +16,12 @@ const path = require('path');
 const client_url = process.env.REACT_APP_CLIENT_URL
 
 const Buffer = require('buffer').Buffer
-const WebSocket = require('ws');
+/*const WebSocket = require('ws');
 var Redis = require('ioredis');
 var redis = new Redis();
 var pub = new Redis();
 
-/*const wss = new WebSocket.Server({
+const wss = new WebSocket.Server({
     port:8081
 });
 const clients = {}
@@ -156,13 +156,13 @@ router.get('/getusershoppinglistnames', async (req,res,next)=>{
                             }
                         }
             }
-            if(listNames.viewableLists.length > 0 || listNames.editableLists.length >0){
+            /*if(listNames.viewableLists.length > 0 || listNames.editableLists.length >0){
                 [...listNames.viewableLists,...listNames.editableLists].forEach((l)=>{
                     redis.subscribe('delete-list', function (err, count) {
                         if (err) console.error(err.message);
                     });
                 })
-            }
+            }*/
             res.json(listNames)
         } catch(e){
             res.status(500).send(new Error('Internal Server Error'))
@@ -190,9 +190,9 @@ router.post('/deleteshoppinglistbyname', async (req,res,next)=>{
                         },
                         { arrayFilters: [  
                             {"outer.ownerId": userId}
-                        ] }).then(()=>{
+                        ] })/*.then(()=>{
                             pub.publish('delete-list', JSON.stringify({listName:listName,ownerEmail:ownerEmail,users:colaborators}));
-                        })
+                        })*/
                 }
             }
             res.json({status:200})
