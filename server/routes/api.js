@@ -16,12 +16,17 @@ const path = require('path');
 const client_url = process.env.REACT_APP_CLIENT_URL
 const Buffer = require('buffer').Buffer
 const WebSocket = require('ws');
+const http = require('http')
+const server = http.createServer(express)
 var Redis = require('ioredis');
 var redis = new Redis();
 var pub = new Redis();
-const wss = new WebSocket.Server({ port: 8081 ,cors: {
-    origin: client_url,
-    methods: ["GET", "POST"]
+const server_url = process.env.REACT_APP_BASE_URL
+const wss = new WebSocket.Server({
+    port:8081,
+    cors: {
+    origin: server_url,
+    methods: ["GET", "POST", "PUT", "PATCH"]
   }});
 const clients = {}
 
