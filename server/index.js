@@ -19,10 +19,10 @@ async function connect() {
 }
 app.use(bodyParser.json());
 app.use(cors())
-app.options(client_url, cors());
+app.options('*', cors());
 connect()
 
-app.use('/api', cors(),routes);
+app.use('/api',routes);
 
 app.get('/', async(req,res) => {
   res.json({status:status})
