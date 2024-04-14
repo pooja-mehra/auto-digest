@@ -48,10 +48,10 @@ export default function ShoppingList(prop) {
     {id:'account',label:'Account',minWidth: 50},
     {id:'details',label:'',minWidth: 50}]
 
-    /*const [socketUrl] = useState(ws_url); 
-    const { sendMessage, lastMessage } = useWebSocket(socketUrl);*/
+    const [socketUrl] = useState(ws_url); 
+    const { sendMessage, lastMessage } = useWebSocket(socketUrl);
 
-    /*useEffect(() => {
+    useEffect(() => {
       if (lastMessage && lastMessage.data) {
         lastMessage.data.text().then((d)=>{
           const notification =  JSON.parse(d)
@@ -62,7 +62,7 @@ export default function ShoppingList(prop) {
           }
         })
       }
-    }, [lastMessage]);*/
+    }, [lastMessage]);
 
     useEffect(()=>{
       prop && prop.accounts && prop.accounts.length>0 && getUserGrocery(prop.accounts)
@@ -372,7 +372,7 @@ export default function ShoppingList(prop) {
                 //window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingLists))
                 setShoppingListNames(shoppingLists)
               }
-              //sendMessage(JSON.stringify({userEmail:prop.userEmail,lists:shoppingLists}))
+              sendMessage(JSON.stringify({userEmail:prop.userEmail,lists:shoppingLists}))
            } 
            })
          } catch(e){

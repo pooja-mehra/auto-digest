@@ -58,7 +58,7 @@ export default function MainToolabr(props){
         Accept: 'application/json'}
       })
        if(res && res.status === 200){
-        await getAccounts(res.data.email,res.data._id,picture)
+        getAccounts(res.data.email,res.data._id,picture)
       }
     } catch(e){
       setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
@@ -80,7 +80,7 @@ export default function MainToolabr(props){
             }
         })
     } catch(e){
-      setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
+      console.log('No collaboration data present!')
     }
     setUser({email:userEmail,avatar:picture, userId:userId, accounts:accounts})
 
@@ -120,7 +120,7 @@ export default function MainToolabr(props){
             Accept: 'application/json'}}).then((res)=>{
           })
       } catch (e){
-        setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
+        console.log('No collaboration data present!')
       }
   }
 }
