@@ -22,7 +22,7 @@ app.use(cors())
 app.options(client_url, cors());
 connect()
 
-app.use('/api', routes);
+app.use('/api', cors(),routes);
 
 app.get('/', async(req,res) => {
   res.json({status:status})

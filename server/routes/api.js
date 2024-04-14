@@ -24,10 +24,7 @@ var pub = new Redis();
 const server_url = process.env.REACT_APP_BASE_URL
 const wss = new WebSocket.Server({
     port:8081,
-    cors: {
-    origin: server_url,
-    methods: ["GET", "POST", "PUT", "PATCH"]
-  }});
+   });
 const clients = {}
 
 wss.on('connection', (ws) => {
