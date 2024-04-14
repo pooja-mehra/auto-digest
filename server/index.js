@@ -19,7 +19,7 @@ async function connect() {
 }
 app.use(bodyParser.json());
 app.use(cors())
-app.options('*', cors());
+app.options(client_url, cors());
 connect()
 
 app.use('/api',routes);

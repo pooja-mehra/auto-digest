@@ -14,24 +14,17 @@ const msgQueue = new Queue('msgqueue', process.env.REDDIS_URL);
 const hbs = require('nodemailer-express-handlebars')
 const path = require('path');
 const client_url = process.env.REACT_APP_CLIENT_URL
+
 const Buffer = require('buffer').Buffer
 const WebSocket = require('ws');
-const http = require('http')
 var Redis = require('ioredis');
 var redis = new Redis();
 var pub = new Redis();
-var server = http.createServer(function(request, response) {
-    response.writeHead(404);
-    response.end();
-});
-server.listen(8081, function() {
-    console.log((new Date()) + ' Server is listening on port 8081');
-});
-const wss = new WebSocket.Server({
-    server: server
-  });
-const clients = {}
 
+/*const wss = new WebSocket.Server({
+    port:8081
+});
+const clients = {}
 wss.on('connection', (ws) => {
     ws.on('message',function (message){
         ws.documentId = JSON.parse(message)
@@ -43,7 +36,7 @@ wss.on('connection', (ws) => {
             ws.send(msg); 
         }
     })
-});
+});*/
   
 const handlebarOptions = {
     viewEngine: {
