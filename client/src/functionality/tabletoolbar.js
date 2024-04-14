@@ -12,6 +12,8 @@ import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import Chip from '@mui/material/Chip';
 import axios from 'axios';
 import { UserContext } from "../App"
+import Alert from '@mui/material/Alert';
+
 const base_url = process.env.REACT_APP_BASE_URL
 
 const filter = createFilterOptions();
@@ -23,11 +25,18 @@ export default function TableToolbar(props){
     const [disable,isDisable] = useState(false)
     const [colborationDilaog,setColaborationDialog] = useState(false)
     const [colaboratorDetails,setColaboratorDetails] = useState([])
+    const [openAlert, setOpenAlert] = useState({isOpen:false,status:'',msg:''})
 
     useEffect(()=>{
         setTitle(listName)
         setListItems(items)
     },[listName,items])
+
+    useEffect(()=>{
+      openAlert.isOpen && openAlert.isOpen === true && setTimeout(()=>{
+        setOpenAlert({isOpen:false,status:'none',msg:''})
+      },2000)
+    },[openAlert])
 
     const deleteList =(option) =>{
       props.deleteList(option)
@@ -51,11 +60,18 @@ export default function TableToolbar(props){
               }
           })
       } catch(e){
-          console.log(e)
+        setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
       }
        
   }
     return(
+      <div>
+      <div style={{width:'95%',margin:'auto'}}>
+      {
+        openAlert.isOpen &&
+        <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
+      }
+      </div>
         <div style={{display:'flex',width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
         <Autocomplete
         value={title}
@@ -135,7 +151,8 @@ export default function TableToolbar(props){
                 isDisable(true)
             }else{
                 isDisable(false)
-            }}}/>
+            }}}>             
+            </TextField>
         )}
       />
       {
@@ -145,6 +162,7 @@ export default function TableToolbar(props){
         listName={listName} colaboratorDetails={colaboratorDetails} userId={value?value.userId:null} userEmail={value?value.email:null}/>}
         </UserContext.Consumer>
       }
+        </div>
         </div>
     )
 }

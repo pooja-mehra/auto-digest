@@ -8,6 +8,7 @@ import Chip from '@mui/material/Chip';
 import SideDrawer from '../shared/sidedrawer';
 import ColaborateDialog from '../shared/colaboratedialog';
 import { UserContext } from "../App"
+import Alert from '@mui/material/Alert';
 
 const base_url = process.env.REACT_APP_BASE_URL
 
@@ -15,10 +16,17 @@ export default function MainToolabr(props){
   const [user, setUser] = useState({email:'',avatar:'',userId:'', accounts:[]})
   const [colborationDilaog,setColaborationDialog] = useState(false)
   const [colaboratorDetails,setColaboratorDetails] = useState([])
+  const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
 
   useEffect(()=>{
     props.setUser(user)
   },[user])
+
+  useEffect(()=>{
+    openAlert.isOpen && openAlert.isOpen === true && setTimeout(()=>{
+      setOpenAlert({isOpen:false,status:'none',msg:''})
+    },2000)
+  },[openAlert])
 
   const login = useGoogleLogin({
     onSuccess: async (codeResponse) => {
@@ -33,12 +41,13 @@ export default function MainToolabr(props){
         if(res && res.data && res.data.email && res.data.id){
           confirmUser(res.data.email,res.data.picture,res.data.id)
         } else{
-          console.log('Invalid Google Account')
+          setOpenAlert({isOpen:true,status:'error',msg:'Invalid Google Account'})
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
+      );
     },
-    onError: (error) => console.log('Login Failed:', error)
+    onError: (error) => setOpenAlert({isOpen:true,status:'error',msg:'Login Failed!'})
   });
 
   const confirmUser = async(email,picture,id) =>{
@@ -52,7 +61,7 @@ export default function MainToolabr(props){
         await getAccounts(res.data.email,res.data._id,picture)
       }
     } catch(e){
-      console.log(e)
+      setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
     }
   }
 
@@ -71,7 +80,7 @@ export default function MainToolabr(props){
             }
         })
     } catch(e){
-        console.log(e)
+      setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
     }
     setUser({email:userEmail,avatar:picture, userId:userId, accounts:accounts})
 
@@ -111,13 +120,18 @@ export default function MainToolabr(props){
             Accept: 'application/json'}}).then((res)=>{
           })
       } catch (e){
-        console.log(e)
+        setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
       }
   }
 }
   return(
     <div>
+    {
+      openAlert.isOpen &&
+      <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
+    }
       <Toolbar style={{backgroundColor:'#482880'}}>
+      
         <div style={{width: '100%',float: 'left'}}>
         <div style={{float:'left', backgroundColor:'#482880'}} >
         <SideDrawer signout={signout} showColaborationDialog ={showColaborationDialog} />

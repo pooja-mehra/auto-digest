@@ -50,7 +50,7 @@ export default function TextExtractor(prop) {
           setOpenAlert({isOpen:true,status:'warning', msg:'Item Not Found! Enter Item Name'})
         }
         })} catch(e){
-          console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
     };
 
@@ -237,7 +237,7 @@ export default function TextExtractor(prop) {
               }
             })
           } catch(e){
-            console.log(e)
+            setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
           }
           setOcr([]) 
         } else{
@@ -288,7 +288,7 @@ export default function TextExtractor(prop) {
       <div style={{ width:'95vw',marginLeft:'auto',marginRight:'auto'}}>
           {
             openAlert.isOpen &&
-            <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
+            <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
           }
       </div>
       <div className="listFooter" >

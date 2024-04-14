@@ -31,7 +31,7 @@
     <div style="text-align: center; background-color:#e5daf6; margin:auto; height:100%">
         <h2>AUTO DIGEST</h2>
         <div style="margin:auto; height:80%;">
-            <h3>{{ownerEmail}} has sent you a request to "{{permission}}" the list: "{{listName}}" on {{company}}</h3>
+            <h3>{{ownerEmail}} has sent you a request to "{{permission}}" {{listName !== null ? 'the list:' listName: 'account'}} on {{company}}</h3>
             <p>By clicking the "Accept" button, you will be redirected to {{company}}</p>
             <p> At {{company}}, you can signup using your google credentials to accept the request</p>
             <a href={{accept}} id="accept">Accept</a>

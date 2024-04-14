@@ -169,12 +169,12 @@ const getData =() =>{
               setDetails(list)
             }else{
                 window.sessionStorage.setItem('details',JSON.stringify([]))
-                setOpenAlert({isOpen:true,status:'error',msg:'No Details Found!'})
+                setOpenAlert({isOpen:true,status:'warning',msg:'No Details Found!'})
             }
             })
           } catch(e){
-            console.log(e)
-          }
+            setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
+        }
         dateRange && window.sessionStorage.removeItem('daterange')
         setDateRange(null)
     }else{
@@ -185,7 +185,7 @@ const getData =() =>{
         ({count:item.count,name:item.name,qty:item.qty,details:item.details.filter((d,i)=>
             new Date(d.purchaseDate) >= new Date(dateRange.startDate) && 
             new Date(d.purchaseDate) <= new Date(dateRange.endDate))})).filter((m,i)=> m.details.length>0)) :
-            setOpenAlert({isOpen:true,status:'error',msg:'No Details Found!'})
+            setOpenAlert({isOpen:true,status:'warning',msg:'No Details Found!'})
             window.sessionStorage.setItem('daterange',JSON.stringify({startDate:dateRange.startDate,endDate:dateRange.endDate}))
             setDateRange({startDate:dateRange.startDate,endDate:dateRange.endDate})
     }
@@ -262,7 +262,7 @@ const getData =() =>{
         />}
         {
             openAlert.isOpen &&
-            <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
+            <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
               
         }
         </div>

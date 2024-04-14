@@ -14,7 +14,27 @@ const msgQueue = new Queue('msgqueue', process.env.REDDIS_URL);
 const hbs = require('nodemailer-express-handlebars')
 const path = require('path');
 const client_url = process.env.REACT_APP_CLIENT_URL
+const Buffer = require('buffer').Buffer
+const WebSocket = require('ws');
+var Redis = require('ioredis');
+var redis = new Redis();
+var pub = new Redis();
+const wss = new WebSocket.Server({ port: 8081 });
+const clients = {}
 
+wss.on('connection', (ws) => {
+    ws.on('message',function (message){
+        ws.documentId = JSON.parse(message)
+    })
+    redis.on('message', function (channel, message) {
+        let listDetails = JSON.parse(message)
+        if(ws.documentId && ws.documentId.lists.length > 0 && ws.documentId.lists.filter((d)=>d.listName === listDetails.listName && d.details.ownedBy === listDetails.ownerEmail).length > 0){
+            const msg = Buffer.from(JSON.stringify({channel:channel,listName:listDetails.listName, ownedBy:listDetails.ownerEmail}));
+            ws.send(msg); 
+        }
+    })
+});
+  
 const handlebarOptions = {
     viewEngine: {
         partialsDir: path.resolve('./shared/'),
@@ -80,7 +100,7 @@ router.post('/putusershoppinglist', async (req, res, next) => {
             } else{
                 let listDetails = userShopping.shoppingLists.find((d)=>d.listName === listName) 
                 if(listDetails !== undefined){
-                let updatedShoppingList = await UserShopping.updateOne({userId:userId,"shoppingLists.listName":listName},
+                let updatedShoppingList = await UserShopping.findOneAndUpdate({userId:userId,"shoppingLists.listName":listName},
                     {$set: { "shoppingLists.$[outer].items":queryItems}},
                     {arrayFilters: [  
                         { "outer.listName": listName},
@@ -133,6 +153,13 @@ router.get('/getusershoppinglistnames', async (req,res,next)=>{
                             }
                         }
             }
+            if(listNames.viewableLists.length > 0 || listNames.editableLists.length >0){
+                [...listNames.viewableLists,...listNames.editableLists].forEach((l)=>{
+                    redis.subscribe('delete-list', function (err, count) {
+                        if (err) console.error(err.message);
+                    });
+                })
+            }
             res.json(listNames)
         } catch(e){
             res.status(500).send(new Error('Internal Server Error'))
@@ -142,23 +169,28 @@ router.get('/getusershoppinglistnames', async (req,res,next)=>{
     }
 })
 
-router.delete('/deleteshoppinglistbyname', async (req,res,next)=>{
-    const listName = req.query.listName
+router.post('/deleteshoppinglistbyname', async (req,res,next)=>{
+    const {listName, ownerEmail} = req.body
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
     if (userId && userId[1] && mongoose.isValidObjectId(userId[1]) && listName && listName !== '') {
         userId = userId[1]
         try{
             let deletedList = await UserShopping.findOneAndUpdate({userId:userId,"shoppingLists.listName":listName},
             {$pull:{shoppingLists:{listName:listName}}})
-            if(deletedList && (deletedList.shoppingLists[0].viewers.length > 0 || deletedList.shoppingLists[0].editors.length>0)){
-                let colaborators = [...deletedList.shoppingLists[0].viewers,...deletedList.shoppingLists[0].editors]
-                await UserAccount.updateMany({email:{$in:colaborators},"colaboratorDetails.ownerId":userId},
+            if(deletedList && deletedList.shoppingLists.length > 0){
+                let selectedList = deletedList.shoppingLists.filter((l)=>l.listName === listName)
+                if(selectedList && (selectedList[0].viewers.length > 0 || selectedList[0].editors.length>0)){
+                    let colaborators = [...selectedList[0].viewers,...selectedList[0].editors]
+                    await UserAccount.updateMany({email:{$in:colaborators},"colaboratorDetails.ownerId":userId},
                         {$pull: {
                             "colaboratorDetails.$[outer].details": { shoppinglistName: listName } }
-                          },
+                        },
                         { arrayFilters: [  
                             {"outer.ownerId": userId}
-                        ] })
+                        ] }).then(()=>{
+                            pub.publish('delete-list', JSON.stringify({listName:listName,ownerEmail:ownerEmail,users:colaborators}));
+                        })
+                }
             }
             res.json({status:200})
         } catch(e){
@@ -269,10 +301,10 @@ router.post('/setinventorycollaborator', async (req, res, next) => {
     if(mongoose.isValidObjectId(ownerId[1]) && ownerId && ownerId[1]) {
         ownerId = ownerId[1]
         try{
-            let userExists = colaboratorEmails.forEach(async (email)=>{    
-                await UserAccount.findOne({email:email})
+            colaboratorEmails.forEach(async (email)=>{    
+                let userExists = await UserAccount.findOne({email:email})
                 if(!userExists){
-                    await UserColaboration.updateOne({ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,level:level, shoppinglistName:listName},
+                    await UserColaboration.updateOne({ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,level:level},
                         { $set: { invitationDate: invitationDate,permission:permission} },
                         {upsert:true,$setOnInsert: { ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,
                         invitationDate: invitationDate,permission:permission, level:level} })
@@ -282,7 +314,8 @@ router.post('/setinventorycollaborator', async (req, res, next) => {
                                 template:"emailtemplate",
                                 context: {
                                     ownerEmail:ownerEmail,
-                                    listName:listName,
+                                    listName:null,
+                                    level:level,
                                     permission:permission,
                                     company: 'auto-digest',
                                     accept:client_url
@@ -754,7 +787,7 @@ router.post('/putcollaborator', async (req, res, next) => {
         ownerId = ownerId[1]
         try{
             colaboratorEmails.forEach(async (email)=>{    
-                await UserAccount.findOne({email:email}).then( async(userExists)=>{
+                let userExists = await UserAccount.findOne({email:email})
                     if(userExists){
                         if(userExists.isColaborator === true){
                             let index = -1
@@ -764,45 +797,36 @@ router.post('/putcollaborator', async (req, res, next) => {
                             if(index !== -1){
                                 let shoppingListExists = userExists.colaboratorDetails[index].details.map((d,i)=> d.shoppinglistName).includes(listName)
                                 if(shoppingListExists){
-                                    await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
+                                    let data = await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
                                     {"$set":{"colaboratorDetails.$[outer].details.$[].permission": permission}},
                                     { arrayFilters: [  
                                         { "outer.ownerId": new ObjectId(ownerId)},
-                                        { "shoppinglistName": listName, "level":level} ] }
-                                ).then(async (data)=>{
+                                        { "shoppinglistName": listName, "level":level} ] })
                                     if(data && data.acknowledged && data.modifiedCount > 0){
                                         await editListPermission(permission,ownerId,listName,email)
                                     }
-                                })
                                 } else{
-                                    await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
+                                    let data = await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
                                     {"$push":{"colaboratorDetails.$[outer].details":{permission:permission,level:level,shoppinglistName:listName}}},
                                     { arrayFilters: [  
-                                        { "outer.ownerId": new ObjectId(ownerId)}] }
-                                    ).then(async (data)=>{
+                                        { "outer.ownerId": new ObjectId(ownerId)}] })
                                     if(data && data.acknowledged && data.modifiedCount > 0){
                                         await addListPermission(permission,ownerId,listName,email)
                                     }
-                                })
                                 }
-                                
                             } else{
-                                await UserAccount.updateOne({email:email},
-                                    {$push:{colaboratorDetails:{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,shoppinglistName:listName,permission:permission}]}}}
-                                ).then(async (data)=>{
-                                    if(data && data.acknowledged && data.modifiedCount > 0){
-                                        await addListPermission(permission,ownerId,listName,email)
-                                    }
-                                })
-                            }  
-                        } else{
-                            await UserAccount.updateOne({email:email},
-                                {isColaborator:true,colaboratorDetails:[{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,shoppinglistName:listName,permission:permission}]}]}
-                            ).then( async (data)=>{
+                                let data = await UserAccount.updateOne({email:email},
+                                {$push:{colaboratorDetails:{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,shoppinglistName:listName,permission:permission}]}}})
                                 if(data && data.acknowledged && data.modifiedCount > 0){
                                     await addListPermission(permission,ownerId,listName,email)
                                 }
-                            })
+                            }  
+                        } else{
+                            let data = await UserAccount.updateOne({email:email},
+                                {isColaborator:true,colaboratorDetails:[{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,shoppinglistName:listName,permission:permission}]}]})
+                            if(data && data.acknowledged && data.modifiedCount > 0){
+                                await addListPermission(permission,ownerId,listName,email)
+                            }
                         }
                     } else{
                         await UserColaboration.updateOne({ownerId:ownerId,ownerEmail:ownerEmail,colaboratorEmail:email,level:level, shoppinglistName:listName},
@@ -816,14 +840,14 @@ router.post('/putcollaborator', async (req, res, next) => {
                                     context: {
                                         ownerEmail:ownerEmail,
                                         listName:listName,
+                                        level:level,
                                         permission:permission,
                                         company: 'auto-digest',
                                         accept:client_url
                                     }}},
                                 );
                             })
-                    }
-                })          
+                    }    
             })
             res.json({success:true})
         } catch(e){

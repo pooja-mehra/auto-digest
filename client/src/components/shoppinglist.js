@@ -15,7 +15,10 @@ import {isMobile} from 'react-device-detect';
 import SaveIcon from '@mui/icons-material/Save';
 import ClearAllDialog from "../shared/cleardialog";
 import InventoryFilters from "../shared/inventoryfilters";
+import useWebSocket from 'react-use-websocket';
+
 const base_url = process.env.REACT_APP_BASE_URL
+const ws_url = process.env.REACT_APP_WS
 
 export default function ShoppingList(prop) {
     const [shoppingList,setShoppingList] = useState(
@@ -37,7 +40,6 @@ export default function ShoppingList(prop) {
     const header=[{id:'addicon',label:<Fab size="small" aria-label="add"><AddIcon /></Fab>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 50, type:"string"},
     {id:'qty',label:'Quantity',minWidth: 50, type:"number"}]
-
     const  shoppedHeader=[{id:'none',label:'',minWidth: 50},
     {id:'name',label:'Name',minWidth: 50, type:"string"},
     {id:'left',label:'Quantity Left',minWidth: 50, type:"number"},
@@ -45,6 +47,22 @@ export default function ShoppingList(prop) {
     {id:'frequency', label:' Buying Frequency', minWidth: 50},
     {id:'account',label:'Account',minWidth: 50},
     {id:'details',label:'',minWidth: 50}]
+
+    const [socketUrl] = useState(ws_url); 
+    const { sendMessage, lastMessage } = useWebSocket(socketUrl);
+
+    useEffect(() => {
+      if (lastMessage && lastMessage.data) {
+        lastMessage.data.text().then((d)=>{
+          const notification =  JSON.parse(d)
+          if(notification.channel === 'delete-list' && notification.ownedBy !== prop.userEmail){
+            setShoppingListNames(shoppingListNames.filter(list => list.listName !== notification.listName ))
+            shoppingList.listName === notification.listName && shoppingList.ownedBy === notification.ownedBy && setShoppingList({listName:'',items:[],permission:'',ownedBy:''})
+            setOpenAlert({isOpen:true, status:'error',msg:notification.listName +' has been deleted by the owner'})
+          }
+        })
+      }
+    }, [lastMessage]);
 
     useEffect(()=>{
       prop && prop.accounts && prop.accounts.length>0 && getUserGrocery(prop.accounts)
@@ -57,13 +75,13 @@ export default function ShoppingList(prop) {
       },4000)
     },[openAlert])
 
-    useEffect(()=>{
+    /*useEffect(()=>{
         const filteredShoppingList = shoppingList.items.filter((item,index)=>item.name !== '')      
         if(filteredShoppingList && filteredShoppingList.length>0){
-          window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,
-          items:shoppingList.items.filter((item,i)=>item.name !== '' && item.qty !=='' && item.qty >0)}))
+          //window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,
+          //items:shoppingList.items.filter((item,i)=>item.name !== '' && item.qty !=='' && item.qty >0)}))
         }
-    },[shoppingList])
+    },[shoppingList])*/
 
     useEffect(()=>{
       shoppingListNames.length === 0 && prop.userId !== '' && prop.userId !== null && getUserShoppingListNames()
@@ -92,7 +110,7 @@ export default function ShoppingList(prop) {
             } 
             })
           } catch(e){
-            console.log(e)
+            setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
           }
       } 
       if(details !== null || (details && details.length > 0)){
@@ -118,7 +136,7 @@ export default function ShoppingList(prop) {
           } 
           })
         } catch(e){
-          console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
       }
       if(details !== null || (details && details.length > 0)){
@@ -217,12 +235,12 @@ export default function ShoppingList(prop) {
                 //getUserGrocery(prop.accounts)
                 setDetails(null)
                 setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
-                window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+                //window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
                 setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
               }
             })
           } catch(e){
-            console.log(e)
+            setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
           }
         } else{
           setOpenAlert({isOpen:true,status:'error',msg:'No Items to Add'})
@@ -263,7 +281,6 @@ export default function ShoppingList(prop) {
             }
           })
         } catch(e){
-          console.log(e)
           setOpenAlert({isOpen:false,status:'error',msg:`Failed to updated item: ${itemName}`})
         }
       }else{
@@ -288,7 +305,7 @@ export default function ShoppingList(prop) {
             }
         })
         } catch(e){
-          console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
       }
     }
@@ -312,13 +329,13 @@ export default function ShoppingList(prop) {
             }
         })
         } catch(e){
-          console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
       }else{
-        filteredShoppingList.length > 0 && listName === '' && setOpenAlert({isOpen:true,status:'error',msg:'Provide Title to Current List'})
+        filteredShoppingList.length > 0 && listName === '' && setOpenAlert({isOpen:true,status:'error',msg:'Please add Title'})
         (prop.userId === null || prop.userId === '') && setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
         if(filteredShoppingList.length === 0 ){
-          window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
+          //window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
           setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
         }
 
@@ -352,14 +369,14 @@ export default function ShoppingList(prop) {
 
             }
               if(shoppingLists && shoppingLists.length > 0){
-                window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingLists))
+                //window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingLists))
                 setShoppingListNames(shoppingLists)
               }
-              
+              sendMessage(JSON.stringify({userEmail:prop.userEmail,lists:shoppingLists}))
            } 
            })
          } catch(e){
-           console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
     }
 
@@ -380,13 +397,13 @@ export default function ShoppingList(prop) {
             Accept: 'application/json'
           }}).then((res)=>{
            if(res && res.data && res.data.length>0){
-            window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],permission:res.data[0].permission}))
+            //window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],permission:res.data[0].permission}))
              setShoppingList({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],
               permission:res.data[0].permission, ownedBy:res.data[0].ownedBy})
            } 
            })
          } catch(e){
-           console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         } 
       } else{
         setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
@@ -396,27 +413,27 @@ export default function ShoppingList(prop) {
     const deleteList = async (option) =>{
       if(prop.userId !== '' && prop.userId !== null){
         try{
-          await axios.delete(`${base_url}api/deleteshoppinglistbyname`,{ params: { listName: option.listName }, 
-          headers: { Authorization: `Bearer ${prop.userId}`,Accept: 'application/json'} })
+          await axios.post(`${base_url}api/deleteshoppinglistbyname`,
+          {listName: option.listName, ownerEmail:prop.userEmail }, 
+          {headers: { Authorization: `Bearer ${prop.userId}`,Accept: 'application/json'} })
           .then(function (res) {
             if(res && res.status === 200){
               const names = shoppingListNames.filter((list) => list.listName !== option.listName)
               setShoppingListNames(names)
-              window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(names))
-              window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[],permission:''}))
+              //window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(names))
+              //window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[],permission:''}))
               setShoppingList({listName:'',items:[],permission:'',ownedBy:''})
-              
             }  
         })
         } catch(e){
-          console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
       }
     }
 
     const clearAll = (isClear) =>{
       if(isClear){
-        window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
+        //window.sessionStorage.setItem('shoppinglist',JSON.stringify({...shoppingList,items:[]}))
         setShoppingList({...shoppingList,items:[]})
       }
       setOpenDialog({isOpen:false,dialogType:'clear'})
@@ -431,7 +448,7 @@ export default function ShoppingList(prop) {
             Accept: 'application/json'}}).then((res)=>{
           })
       } catch (e){
-        console.log(e)
+        setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
       }
     }
 
@@ -446,7 +463,7 @@ export default function ShoppingList(prop) {
         <div style={{width:'95%'}}>
         {
           openAlert.isOpen &&
-          <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
+          <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
         }
           <div className='shoppinglistFooter'>
           <div  className="shoppingfile-upload">

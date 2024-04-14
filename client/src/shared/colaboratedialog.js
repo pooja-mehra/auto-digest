@@ -41,8 +41,8 @@ export default function ColaborateDialog(props){
               }}
               onChange={async (event, newValue) => {
                 if(newValue !== null){
-                  emails = newValue.map((value)=>!colboratorsEmail.includes(value.toLowerCase()) ? [...emails,value.replace('Add Email:' ,'')]:[...emails,value.toLowerCase()])
-                }
+                  emails = newValue.map((value)=>!colboratorsEmail.includes(value.toLowerCase()) ? value.replace('Add Email:' ,''):value.toLowerCase())
+                }       
                 }}
               selectOnFocus
               clearOnBlur
