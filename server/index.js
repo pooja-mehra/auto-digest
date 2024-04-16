@@ -26,7 +26,7 @@ app.use(cors({options:corsOptions}))
 //app.options([client_ws], cors());
 connect()
 
-app.use('/api',routes);
+app.use('/api',cors({options:corsOptions}), routes);
 
 app.get('/', async(req,res) => {
   res.json({status:status})
