@@ -20,10 +20,19 @@ const WebSocket = require('ws');
 var Redis = require('ioredis');
 var redis = new Redis();
 var pub = new Redis();
+const http = require('http');
 
-const wss = new WebSocket.Server({
-    port:8081
+const server = http.createServer();
+const wss = new WebSocket.Server({ server });
+
+const port = process.env.PORT || 8081;
+
+server.listen(port, () => {
+  console.log(`WebSocket server listening on port ${port}`);
 });
+/*const wss = new WebSocket.Server({
+    port:8081
+});*/
 const clients = {}
 wss.on('connection', (ws) => {
     ws.on('message',function (message){
