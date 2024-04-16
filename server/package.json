@@ -27,6 +27,7 @@
     "nodemailer": "^6.9.9",
     "nodemailer-express-handlebars": "^6.1.0",
     "redis-cli": "^2.1.2",
-    "redis-om": "^0.4.3"
+    "redis-om": "^0.4.3",
+    "ws": "^8.16.0"
   }
 }
