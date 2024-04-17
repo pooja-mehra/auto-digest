@@ -14,39 +14,10 @@ const msgQueue = new Queue('msgqueue', process.env.REDDIS_URL);
 const hbs = require('nodemailer-express-handlebars')
 const path = require('path');
 const client_url = process.env.REACT_APP_CLIENT_URL
-
 const Buffer = require('buffer').Buffer
-const WebSocket = require('ws');
 var Redis = require('ioredis');
-var redis = new Redis();
 var pub = new Redis();
-const http = require('http');
 
-const server = http.createServer();
-const wss = new WebSocket.Server({ server });
-
-const port = process.env.PORT || 8081;
-
-server.listen(port, () => {
-  console.log(`WebSocket server listening on port ${port}`);
-});
-/*const wss = new WebSocket.Server({
-    port:8081
-});*/
-const clients = {}
-wss.on('connection', (ws) => {
-    ws.on('message',function (message){
-        ws.documentId = JSON.parse(message)
-    })
-    redis.on('message', function (channel, message) {
-        let listDetails = JSON.parse(message)
-        if(ws.documentId && ws.documentId.lists.length > 0 && ws.documentId.lists.filter((d)=>d.listName === listDetails.listName && d.details.ownedBy === listDetails.ownerEmail).length > 0){
-            const msg = Buffer.from(JSON.stringify({channel:channel,listName:listDetails.listName, ownedBy:listDetails.ownerEmail}));
-            ws.send(msg); 
-        }
-    })
-});
-  
 const handlebarOptions = {
     viewEngine: {
         partialsDir: path.resolve('./shared/'),
@@ -165,13 +136,13 @@ router.get('/getusershoppinglistnames', async (req,res,next)=>{
                             }
                         }
             }
-            if(listNames.viewableLists.length > 0 || listNames.editableLists.length >0){
+            /*if(listNames.viewableLists.length > 0 || listNames.editableLists.length >0){
                 [...listNames.viewableLists,...listNames.editableLists].forEach((l)=>{
                     redis.subscribe('delete-list', function (err, count) {
                         if (err) console.error(err.message);
                     });
                 })
-            }
+            }*/
             res.json(listNames)
         } catch(e){
             res.status(500).send(new Error('Internal Server Error'))

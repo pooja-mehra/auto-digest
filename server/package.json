@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "server": "node index.js",
-    "server-prod": "node index.js",
+    "server": "env-cmd -f .env.development node index.js",
+    "server-prod": "env-cmd -f .env.production node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
