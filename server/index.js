@@ -13,9 +13,11 @@ const http = require('http');
 const server = http.createServer(app);
 const wss = new WebSocket.Server({server})
 var Redis = require('ioredis');
-var redis = new Redis();
-var pub = new Redis();
-
+//var redis = new Redis();
+const redis = new Redis({
+  port: 6379,
+  host: process.env.REDIS_SERVICE_HOST, 
+});
 wss.on('connection', (ws) => {
   ws.on('message',function (message){
       ws.documentId = JSON.parse(message)

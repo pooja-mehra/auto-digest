@@ -15,11 +15,12 @@ const hbs = require('nodemailer-express-handlebars')
 const path = require('path');
 const client_url = process.env.REACT_APP_CLIENT_URL
 const Buffer = require('buffer').Buffer
-const redis = new Redis({
+var Redis = require('ioredis');
+const pub = new Redis({
     port: 6379,
     host: process.env.REDIS_SERVICE_HOST, 
   });
-var pub = new Redis();
+//var pub = new Redis();
 
 const handlebarOptions = {
     viewEngine: {
