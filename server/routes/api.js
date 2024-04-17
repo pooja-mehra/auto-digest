@@ -16,10 +16,7 @@ const path = require('path');
 const client_url = process.env.REACT_APP_CLIENT_URL
 const Buffer = require('buffer').Buffer
 var Redis = require('ioredis');
-const pub = new Redis({
-    port: 6379,
-    host: process.env.REDIS_SERVICE_HOST, 
-  });
+const pub = new Redis(process.env.REDDIS_URL);
 //var pub = new Redis();
 
 const handlebarOptions = {
