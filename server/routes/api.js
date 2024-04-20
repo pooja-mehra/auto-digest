@@ -331,7 +331,7 @@ router.post('/setinventorycollaborator', async (req, res, next) => {
                                 {"$set":{"colaboratorDetails.$[outer].details.$[].permission": permission}},
                                 { arrayFilters: [  
                                     { "outer.ownerId": new ObjectId(ownerId)},
-                                    { "level":level} ] }
+                                    { "colaboratorDetails.details.level":level} ] }
                             ).then(async (data)=>{
                                 if(data && data.acknowledged && data.modifiedCount > 0){
                                     await editInventoryPermission(permission,ownerId,email)

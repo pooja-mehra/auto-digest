@@ -350,13 +350,13 @@ export default function ShoppingList(prop) {
     }
 
     const getUserShoppingListNames = async(details) =>{
+      let shoppingLists = []
       try{
           await axios.get(`${base_url}api/getusershoppinglistnames`,{headers: {
             Authorization: `Bearer ${prop.userId}`,
             Accept: 'application/json'
         }}).then((res)=>{
           if(res && res.data){
-            let shoppingLists = []
             if(res.data.ownedLists){
               const ownedListNames = res.data.ownedLists.map((d,i)=>{
                 return {listName:d.listName, permission:'Owner',details:{ownedBy:'You',viewers:d.viewers,editors:d.editors}}})
@@ -377,13 +377,13 @@ export default function ShoppingList(prop) {
               if(shoppingLists && shoppingLists.length > 0){
                 //window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingLists))
                 setShoppingListNames(shoppingLists)
-                sendMessage(JSON.stringify({userEmail:prop.userEmail,lists:shoppingLists}))
               }
            } 
            })
          } catch(e){
           setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
+        sendMessage(JSON.stringify({userEmail:prop.userEmail,lists:shoppingLists}))
     }
 
     const setShoppingListTitle = (title) =>{
@@ -406,12 +406,12 @@ export default function ShoppingList(prop) {
             //window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],permission:res.data[0].permission}))
              setShoppingList({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],
               permission:res.data[0].permission, ownedBy:res.data[0].ownedBy})
-              sendMessage(JSON.stringify({userEmail:prop.userEmail,listName:listDetails.listName, lists:shoppingListNames}))
            } 
            })
          } catch(e){
           setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         } 
+        sendMessage(JSON.stringify({userEmail:prop.userEmail,listName:listDetails.listName, lists:shoppingListNames}))
       } else{
         setOpenAlert({isOpen:true,status:'error',msg:'Please SIGNIN to proceed'})
       }
