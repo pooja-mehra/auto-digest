@@ -15,19 +15,37 @@ const wss = new WebSocket.Server({server})
 var Redis = require('ioredis');
 //var redis = new Redis();
 const redis = new Redis(process.env.REDDIS_URL);
+redis.subscribe('delete-list', function (err, count) {
+  if (err) console.error(err.message);
+});
+redis.subscribe('edit-list', function (err, count) {
+  if (err) console.error(err.message);
+});
+redis.subscribe('share-list', function (err, count) {
+  if (err) console.error(err.message);
+});
+
 wss.on('connection', (ws) => {
   ws.on('message',function (message){
       ws.documentId = JSON.parse(message)
-      redis.subscribe('delete-list', function (err, count) {
-        if (err) console.error(err.message);
-    });
   })
   redis.on('message', function (channel, message) {
     let listDetails = JSON.parse(message)
-    if(ws.documentId && ws.documentId.lists.length > 0 && ws.documentId.lists.filter((d)=>d.listName === listDetails.listName && d.details.ownedBy === listDetails.ownerEmail).length > 0){
+    if(channel ==='delete-list'){
+    if(ws.documentId && ws.documentId.lists && ws.documentId.lists.length > 0 && ws.documentId.lists.filter((d)=>d.listName === listDetails.listName && d.details.ownedBy === listDetails.ownerEmail).length > 0){
         const msg = Buffer.from(JSON.stringify({channel:channel,listName:listDetails.listName, ownedBy:listDetails.ownerEmail}));
         ws.send(msg); 
-    }
+    }}
+    if(channel ==='edit-list'){
+      if(ws.documentId && ws.documentId.listName === listDetails.listName && listDetails.colaborators.includes(ws.documentId.userEmail)){
+        const msg = Buffer.from(JSON.stringify({channel:channel,listName:listDetails.listName, ownedBy:listDetails.ownerEmail, items:listDetails.items,editor:listDetails.editor}));
+        ws.send(msg); 
+    }}
+    if(channel ==='share-list'){
+      if(ws.documentId && ws.documentId.lists.filter((d)=>d.listName === listDetails.listName && d.details.ownedBy === listDetails.ownerEmail).length === 0 && listDetails.colaborators.includes(ws.documentId.userEmail)){
+          const msg = Buffer.from(JSON.stringify({channel:channel,listName:listDetails.listName, ownedBy:listDetails.ownerEmail, permission:listDetails.permission}));
+          ws.send(msg); 
+      }}
 })
 });
 var status = 'fail'

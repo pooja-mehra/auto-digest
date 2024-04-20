@@ -58,7 +58,9 @@ export default function MainToolabr(props){
         Accept: 'application/json'}
       })
        if(res && res.status === 200){
-        getAccounts(res.data.email,res.data._id,picture)
+        let accounts = [{email:'All',details:{level:'',permission:''}},{email:email,details:{level:'accounts',permission:'Owner'}}]
+        let data = await getAccounts(res.data.email,res.data._id,picture)
+        setUser({email:email,avatar:picture, userId:res.data._id, accounts:data && data.length >0?[...accounts,...data]:accounts})
       }
     } catch(e){
       setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
@@ -66,23 +68,21 @@ export default function MainToolabr(props){
   }
 
   const getAccounts = async(userEmail,userId,picture) =>{
-    let accounts = [{email:'All',permission:''},{email:userEmail,permission:'Owner'}]
     try{
-        await axios.get(`${base_url}api/getowneremail`,{
+        let res = await axios.get(`${base_url}api/getowneremail`,{
             params:{email:userEmail},
             headers: {
             Authorization: `Bearer ${userId}`,
             Accept: 'application/json'
-        }}).then((res)=>{
-            if(res && res.data && res.data.colaboratorDetails){
-              let data = res.data.colaboratorDetails.map((d)=>{return {email:d.ownerEmail,permission:d.details.filter((detail)=>detail.level === 'inventories')[0].permission}})
-                accounts = [...accounts,...data]
-            }
-        })
+        }})
+        if(res && res.data && res.data.colaboratorDetails){
+          let data = res.data.colaboratorDetails.map((d)=>{return {email:d.ownerEmail,details:d.details.filter((detail)=>detail.level !== 'shoppinglist')[0]}})
+          .filter((p)=>p.details !== undefined).map((d)=>{return {email:d.email,details:{level:d.details.level,permission:d.details.permission}}})
+          return data
+        }
     } catch(e){
       console.log('No collaboration data present!')
     }
-    setUser({email:userEmail,avatar:picture, userId:userId, accounts:accounts})
 
      
 }
@@ -104,17 +104,17 @@ export default function MainToolabr(props){
     setColaborationDialog(true)
   }
 
-  const setColaborateDialog = (isOpen,permission,emails,listName) =>{
-    if(permission && permission !== null && emails && emails.length>0 && props.user){
-      setInventoryPermission(permission,emails,props.user.userId,props.user.email)
+  const setColaborateDialog = (isOpen,permission,emails,listName,accountType) =>{
+    if(permission && permission !== null && emails && emails.length>0 && props.user && accountType){
+      setInventoryPermission(permission,emails,props.user.userId,props.user.email,accountType)
     }
     setColaborationDialog(isOpen)
   }
-  const setInventoryPermission = async(permission,emails,userId,userEmail) =>{
+  const setInventoryPermission = async(permission,emails,userId,userEmail,accountType) =>{
     if(user && user.userId !== ''){
       try{
         await axios.post(`${base_url}api/setinventorycollaborator`,{colaboratorEmails:emails,permission:permission,
-          invitationDate:new Date(Date.now()),level:'inventories',ownerEmail:userEmail},
+          invitationDate:new Date(Date.now()),level:accountType.toLowerCase(),ownerEmail:userEmail},
           {headers: {
             Authorization: `Bearer ${userId}`,
             Accept: 'application/json'}}).then((res)=>{

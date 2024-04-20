@@ -58,7 +58,15 @@ export default function ShoppingList(prop) {
           if(notification.channel === 'delete-list' && notification.ownedBy !== prop.userEmail){
             setShoppingListNames(shoppingListNames.filter(list => list.listName !== notification.listName ))
             shoppingList.listName === notification.listName && shoppingList.ownedBy === notification.ownedBy && setShoppingList({listName:'',items:[],permission:'',ownedBy:''})
-            setOpenAlert({isOpen:true, status:'error',msg:notification.listName +' has been deleted by the owner'})
+            setOpenAlert({isOpen:true, status:'warning',msg:notification.listName +' has been deleted by '+ notification.ownedBy})
+          }
+          if(notification.channel === 'edit-list' && notification.editor !== prop.userEmail){
+            shoppingList.listName === notification.listName && shoppingList.ownedBy === notification.ownedBy && setShoppingList({...shoppingList, items:notification.items})
+            setOpenAlert({isOpen:true, status:'success',msg:notification.listName +' has been changed by ' + notification.editor})
+          }
+          if(notification.channel === 'share-list' && notification.ownedBy !== prop.userEmail){
+            setShoppingListNames([...shoppingListNames,{listName:notification.listName, permission:notification.permission,details:{ownedBy:notification.ownedBy}}])
+            setOpenAlert({isOpen:true, status:'success',msg:notification.listName +' has been shared by '+notification.ownedBy + ' to ' +notification.permission})
           }
         })
       }
@@ -88,7 +96,7 @@ export default function ShoppingList(prop) {
     })
 
     const getUserGrocery = async (accounts) =>{
-      let userEmails = accounts.length > 0 ? accounts.filter((c)=>c.email !== 'All').map((a)=>a.email):[]
+      let userEmails = accounts.length > 0 ? accounts.filter((c)=>c.email !== 'All' && c.details.level !== 'shopping').map((a)=>a.email):[]
       if(userEmails.length > 0 && prop.userId !== '' && prop.userId !== null && details === null){
           try{
             await axios.get(`${base_url}api/getallusersgrocery`,{
@@ -99,7 +107,7 @@ export default function ShoppingList(prop) {
           }}).then((res)=>{
             if(res && res.data.length > 0){
               let data = res.data.map((inv,i)=> {return inv.inventories
-                .map((d)=> ({...d,account:inv.email.filter((e)=>e !== null)[0],permission:accounts.filter((a)=>a.email === inv.email.filter((e)=>e !== null)[0]).map((i)=>i.permission)[0]}))
+                .map((d)=> ({...d,account:inv.email.filter((e)=>e !== null)[0],permission:accounts.filter((a)=>a.email === inv.email.filter((e)=>e !== null)[0]).map((i)=>i.details.permission)[0]}))
                 })
                 let list =[]
                 data.forEach((d,i)=>{
@@ -299,9 +307,9 @@ export default function ShoppingList(prop) {
             {listName:shoppingList.listName,queryItems:shoppingListQuery, editorEmail:prop.userEmail, ownerEmail:shoppingList.ownedBy},
             )
           .then((res)=>{
-            if(res && res.status === 200 && res.data && res.data.acknowledged === true){
+            if(res && res.status === 200 ){
               setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
-              getUserShoppingListNames()
+              //getUserShoppingListNames()
             }
         })
         } catch(e){
@@ -317,13 +325,13 @@ export default function ShoppingList(prop) {
         let shoppingListQuery = mergeShoppingList(filteredShoppingList)
         try{  
           await axios.post(`${base_url}api/putusershoppinglist`,
-            {listName:shoppingList.listName,queryItems:shoppingListQuery},
+            {listName:shoppingList.listName,queryItems:shoppingListQuery, ownerEmail:prop.userEmail},
             {headers: {
               Authorization: `Bearer ${prop.userId}`,
               Accept: 'application/json'}}
             )
           .then((res)=>{
-            if(res && res.status === 200 && res.data && res.data.acknowledged === true){
+            if(res && res.status === 200){
               setOpenAlert({isOpen:true,status:'success',msg:'Shopping List created/updated under Name: '+ shoppingList.listName})
               getUserShoppingListNames()
             }
@@ -338,9 +346,7 @@ export default function ShoppingList(prop) {
           //window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:'',items:[]}))
           setShoppingList({listName:'',items:[],permission:'',ownedBy:''}) 
         }
-
-      }
-        
+      }   
     }
 
     const getUserShoppingListNames = async(details) =>{
@@ -371,8 +377,8 @@ export default function ShoppingList(prop) {
               if(shoppingLists && shoppingLists.length > 0){
                 //window.sessionStorage.setItem('shoppinglistnames',JSON.stringify(shoppingLists))
                 setShoppingListNames(shoppingLists)
+                sendMessage(JSON.stringify({userEmail:prop.userEmail,lists:shoppingLists}))
               }
-              sendMessage(JSON.stringify({userEmail:prop.userEmail,lists:shoppingLists}))
            } 
            })
          } catch(e){
@@ -400,6 +406,7 @@ export default function ShoppingList(prop) {
             //window.sessionStorage.setItem('shoppinglist',JSON.stringify({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],permission:res.data[0].permission}))
              setShoppingList({listName:listDetails.listName,items:[...res.data[0].shoppingLists[0].items],
               permission:res.data[0].permission, ownedBy:res.data[0].ownedBy})
+              sendMessage(JSON.stringify({userEmail:prop.userEmail,listName:listDetails.listName, lists:shoppingListNames}))
            } 
            })
          } catch(e){
@@ -446,7 +453,11 @@ export default function ShoppingList(prop) {
           {headers: {
             Authorization: `Bearer ${prop.userId}`,
             Accept: 'application/json'}}).then((res)=>{
-          })
+              if(res && res.status === 200){
+                setOpenAlert({isOpen:true, status:'success', msg:'Request sent!'})
+              }
+            })
+            
       } catch (e){
         setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
       }

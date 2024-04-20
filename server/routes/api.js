@@ -54,14 +54,20 @@ router.post('/editownershoppinglist', async(req,res,next)=>{
         if(!ownerData){
             res.status(401).send(new Error('UnAuthorized'));
         } else{
-            let shoppingData = await UserShopping.updateOne({userId:ownerData._id,"shoppingLists.listName":listName,"shoppingLists.editors":editorEmail},
+            let shoppingData = await UserShopping.findOneAndUpdate({userId:ownerData._id,"shoppingLists.listName":listName,"shoppingLists.editors":editorEmail},
             {$set: { "shoppingLists.$[outer].items":queryItems}},
             { arrayFilters: [  
                 { "outer.listName": listName},
-            ] })
-            if(shoppingData){
-                res.json(shoppingData)
-            }
+            ] }).then((data)=>{
+                if(data){
+                    let updatedShoppingList = data.shoppingLists.filter((s)=>s.listName === listName)
+                    let colaborators = [...updatedShoppingList[0].viewers,...updatedShoppingList[0].editors,ownerEmail]
+                    if(colaborators.length > 0){
+                        pub.publish('edit-list', JSON.stringify({listName:listName,ownerEmail:ownerEmail,colaborators:colaborators, items:queryItems, editor:editorEmail}));
+                    }
+                }
+            })
+            res.json(shoppingData)
         }
     } catch(e){
         res.status(500).send(new Error('Internal Server Error'));
@@ -70,7 +76,7 @@ router.post('/editownershoppinglist', async(req,res,next)=>{
 })
 
 router.post('/putusershoppinglist', async (req, res, next) => {
-    const {listName, queryItems} = req.body
+    const {listName, queryItems, ownerEmail} = req.body
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
     if(listName && listName !== '' &&  mongoose.isValidObjectId(userId[1]) && queryItems && userId && userId[1]) {
         userId = userId[1]
@@ -88,10 +94,16 @@ router.post('/putusershoppinglist', async (req, res, next) => {
                     {$set: { "shoppingLists.$[outer].items":queryItems}},
                     {arrayFilters: [  
                         { "outer.listName": listName},
-                    ] })
-                    if(updatedShoppingList){
-                        res.json(updatedShoppingList)
-                    }
+                    ] }).then((data)=>{
+                        if(data){
+                            let updatedShoppingList = data.shoppingLists.filter((s)=>s.listName === listName)
+                            let colaborators = [...updatedShoppingList[0].viewers,...updatedShoppingList[0].editors]
+                            if(colaborators.length > 0){
+                                pub.publish('edit-list', JSON.stringify({listName:listName,ownerEmail:ownerEmail,colaborators:colaborators, items:queryItems, editor:ownerEmail}));
+                            }
+                        }
+                    })
+                    res.json(updatedShoppingList)
                 } else{
                     await UserShopping.updateOne({userId:userId},
                     {$push: {shoppingLists:{listName:listName,items:queryItems}}})
@@ -451,6 +463,7 @@ router.post('/putusergrocery', async (req, res, next) => {
         res.status(401).send(new Error('UnAuthorized'))
     }
 })
+
 router.get('/getallusersgrocery', async (req, res, next) => {
     const {userEmails} = req.query
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
@@ -507,7 +520,6 @@ router.get('/getallusersgrocery', async (req, res, next) => {
     }
     });
 
-
 router.get('/getallusergrocery', (req, res, next) => {
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
     if (userId && userId[1] && mongoose.isValidObjectId(userId[1])) { 
@@ -561,8 +573,7 @@ router.post('/updateusergrocerybyname', async(req,res,next)=>{
                 let user = await UserAccount.findOne({email:account})
                 if(user){
                     userId = user._id
-                    let editor = await UserInventories.updateOne({userId:new ObjectId(userId),"inventories.name":name,
-                        "$in":{editors:email}},
+                    let editor = await UserInventories.updateOne({userId:new ObjectId(userId),"inventories.name":name,"editors":email},
                         {"$set":{"inventories.$[outer].used": used}},
                         { arrayFilters: [  
                             { "outer.name": name}
@@ -697,9 +708,8 @@ router.get('/getowneremail', (req,res,next)=>{
     if (userId && userId[1] && mongoose.isValidObjectId(userId[1])) {
          userId = userId[1]
         try{
-            UserAccount.findOne({email:email,"colaboratorDetails.details.level":'inventories'},
+            UserAccount.findOne({email:email,$or:[{"colaboratorDetails.details.level":'inventories'},{"colaboratorDetails.details.level":'accounts'}]},
             {_id:0,"colaboratorDetails.ownerEmail":1,"colaboratorDetails.details":1}
-           
             ).then((data)=>{
                 res.json(data)
             })
@@ -713,7 +723,15 @@ router.get('/getowneremail', (req,res,next)=>{
 
 async function addListPermission(permission,ownerId,listName,email)
 {
-    permission ==='edit'? 
+    if(listName === 'All'){
+        permission ==='edit'? 
+        await UserShopping.updateOne({userId:new ObjectId(ownerId),"shoppingLists.editors":{ $nin: [email] }},
+        {$push:{"shoppingLists.$[].editors":email}})
+        : await UserShopping.updateOne({userId:new ObjectId(ownerId),"shoppingLists.viewers":{ $nin: [email] }}, 
+        {$push:{"shoppingLists.$[].viewers":email}}
+        )
+    } else{
+        permission ==='edit'? 
         await UserShopping.updateOne({userId:new ObjectId(ownerId), "shoppingLists.listName":listName}, 
         {$push:{"shoppingLists.$[outer].editors":email}},
         { arrayFilters: [  
@@ -726,40 +744,52 @@ async function addListPermission(permission,ownerId,listName,email)
         ] }
         ).then((data)=>{
         })
+    }
 }
 
 async function editListPermission(permission,ownerId,listName,email)
 {
-    permission === 'edit'? 
+    if(listName === 'All'){
+        permission ==='edit'? 
+        await UserShopping.updateOne({userId:new ObjectId(ownerId),"shoppingLists.editors":{ $nin: [email] },"shoppingLists.viewers":{ $in: [email] }},
+        {$pull:{"shoppingLists.$[].viewers":email},
+        $push:{"shoppingLists.$[].editors":email}})
+        : await UserShopping.updateOne({userId:new ObjectId(ownerId),"shoppingLists.viewers":{ $nin: [email] },"shoppingLists.editors":{ $in: [email] }}, 
+        {$pull:{"shoppingLists.$[].editors":email},
+        $push:{"shoppingLists.$[].viewers":email}}
+        )
+    } else{
+        permission === 'edit'? 
         await UserShopping.updateOne({userId:new ObjectId(ownerId), "shoppingLists.listName":listName,"shoppingLists.viewers":email}, {
-            $pull:{"shoppingLists.$[outer].viewers":{$in:email}},
+            $pull:{"shoppingLists.$[outer].viewers":email},
             $push:{"shoppingLists.$[outer].editors":email}
             },
             { arrayFilters: [  
                 { "outer.listName": listName},
             ] }
-            ).then((data)=>{
-            })
+            )
         : await UserShopping.updateOne({userId:new ObjectId(ownerId), "shoppingLists.listName":listName, "shoppingLists.editors":email}, {
-            $pull:{"shoppingLists.$[outer].editors":{$in:email}},
+            $pull:{"shoppingLists.$[outer].editors":email},
             $push:{"shoppingLists.$[outer].viewers":email}},
             { arrayFilters: [  
                 { "outer.listName": listName},
             ] }
             )
+    }
+    
 }
 
 async function editInventoryPermission(permission,ownerId,email)
 {
     permission === 'edit'? 
         await UserInventories.updateOne({userId:new ObjectId(ownerId), viewers:email}, {
-            $pull:{viewers:{$in:email}},
+            $pull:{viewers:email},
             $push:{editors:email}
             }
             ).then((data)=>{
             })
         : await UserInventories.updateOne({userId:new ObjectId(ownerId), editors:email}, {
-            $pull:{editors:{$in:email}},
+            $pull:{editors:email},
             $push:{viewers:email}}
             )
 }
@@ -782,12 +812,13 @@ router.post('/putcollaborator', async (req, res, next) => {
                                 let shoppingListExists = userExists.colaboratorDetails[index].details.map((d,i)=> d.shoppinglistName).includes(listName)
                                 if(shoppingListExists){
                                     let data = await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
-                                    {"$set":{"colaboratorDetails.$[outer].details.$[].permission": permission}},
+                                    {"$set":{"colaboratorDetails.$[outer].details.$[inner].permission": permission}},
                                     { arrayFilters: [  
                                         { "outer.ownerId": new ObjectId(ownerId)},
-                                        { "shoppinglistName": listName, "level":level} ] })
+                                        { "inner.shoppinglistName": listName}
+                                        ] })
                                     if(data && data.acknowledged && data.modifiedCount > 0){
-                                        await editListPermission(permission,ownerId,listName,email)
+                                       await editListPermission(permission,ownerId,listName,email)
                                     }
                                 } else{
                                     let data = await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
@@ -833,6 +864,7 @@ router.post('/putcollaborator', async (req, res, next) => {
                             })
                     }    
             })
+            pub.publish('share-list', JSON.stringify({listName:listName,ownerEmail:ownerEmail,permission:permission,colaborators:colaboratorEmails}));
             res.json({success:true})
         } catch(e){
             res.json({success:false})

@@ -11,6 +11,7 @@ import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
+import MultipleSelect from '../shared/multiselect';
 
 const filter = createFilterOptions();
 export default function ColaborateDialog(props){
@@ -18,7 +19,7 @@ export default function ColaborateDialog(props){
     const colboratorsEmail = colaboratorDetails.length> 0 ?colaboratorDetails.map((c)=>c.email):[]
     let emails = []
     let permission = 'view'
-
+    let accountType= null
     const SelectEmail =() =>{
         return (
             <Autocomplete
@@ -49,18 +50,18 @@ export default function ColaborateDialog(props){
               handleHomeEndKeys
               id="free-solo-with-text-demo"
               renderOption={(props, option) => <li {...props}>{option}</li>}
-              sx={{ width: 300 }}
-              freeSolo
+              sx={{ width: 320 }}
               renderInput={(params) => (
-                <TextField {...params} label="Select/Add Email" >{emails}</TextField>
+                <TextField {...params} label="Select/Add Email"  style={{paddingTop:5, marginTop:5}}
+                >{emails}</TextField>
               )}
             />
           );
     }
     const PermissionForm =() =>{
         return (
-            <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
-              <InputLabel id="demo-select-small-label">permission</InputLabel>
+            <FormControl sx={{ minWidth: 320 }} style={{paddingTop:5}}>
+              <InputLabel id="demo-select-small-label" >permission</InputLabel>
               <Select
                 labelId="demo-select-small-label"
                 id="demo-select-small"
@@ -76,19 +77,25 @@ export default function ColaborateDialog(props){
             </FormControl>
           );
     }
+
+    const setAccountType = (accounts) =>{
+      accountType = accounts.length > 0 ? accounts.length === 1 ? accounts[0] : 'Accounts':null
+    }
+
     return(
       <Dialog
       open={colborationDilaog}
       onClose={()=>props.setColaborateDialog(false)}
       PaperComponent={PaperComponent}
-      aria-labelledby="draggable-dialog-title"
-    >
+      aria-labelledby="draggable-dialog-title">
       <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
-        Set Permissions: {listName === null ? 'Inventories':listName}
+        {listName === null ? 'Set Permissions for Inventories '//<MultipleSelect setAccountType={setAccountType}/>
+        :'Set Permissions for '+listName}
       </DialogTitle>
       <DialogContent>
         <DialogContentText>
             <SelectEmail/>
+            <br/>
             <PermissionForm/>
         </DialogContentText>
       </DialogContent>
@@ -96,7 +103,7 @@ export default function ColaborateDialog(props){
         <Button autoFocus onClick={()=>props.setColaborateDialog(false,null,null)}>
           Cancel
         </Button>
-        <Button onClick={()=>props.setColaborateDialog(false,permission,emails,listName)}>Go Ahead</Button>
+        <Button onClick={()=>props.setColaborateDialog(false,permission,emails,listName,accountType)}>Go Ahead</Button>
       </DialogActions>
     </Dialog>
     );
