@@ -19,7 +19,7 @@ export default function ColaborateDialog(props){
     const colboratorsEmail = colaboratorDetails.length> 0 ?colaboratorDetails.map((c)=>c.email):[]
     let emails = []
     let permission = 'view'
-    let accountType= null
+    let accountType= 'inventories'
     const SelectEmail =() =>{
         return (
             <Autocomplete

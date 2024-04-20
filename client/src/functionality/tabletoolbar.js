@@ -42,7 +42,7 @@ export default function TableToolbar(props){
       props.deleteList(option)
     }
 
-    const setColaborateDialog = (isOpen,permission,emails,listName) =>{
+    const setColaborateDialog = (isOpen,permission,emails,listName,accountType) =>{
       if(permission && permission !== null && emails && emails.length>0){
         props.setpermissions(permission,emails,listName)
       }
