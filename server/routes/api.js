@@ -327,45 +327,40 @@ router.post('/setinventorycollaborator', async (req, res, next) => {
                         if(index !== -1){
                             let levelExists = userExists.colaboratorDetails[index].details.map((d,i)=> d.level).includes(level)
                             if(levelExists){
-                                await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
+                                let data = await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
                                 {"$set":{"colaboratorDetails.$[outer].details.$[].permission": permission}},
                                 { arrayFilters: [  
                                     { "outer.ownerId": new ObjectId(ownerId)},
-                                    { "colaboratorDetails.details.level":level} ] }
-                            ).then(async (data)=>{
+                                    { "colaboratorDetails.details.level":level} ] })
                                 if(data && data.acknowledged && data.modifiedCount > 0){
                                     await editInventoryPermission(permission,ownerId,email)
                                 }
-                            })
                             } else{
-                                await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
+                                let data = await UserAccount.updateOne({email:email,"colaboratorDetails.ownerId":ownerId},
                                 {$push:{"colaboratorDetails.$[outer].details":{permission:permission,level:level}}},
                                 { arrayFilters: [  
                                     { "outer.ownerId": new ObjectId(ownerId)}] }
-                                ).then(async (data)=>{
+                                )
                                 if(data && data.acknowledged && data.modifiedCount > 0){
                                     await addInventoryPermission(permission,ownerId,email)
                                 }
-                            })
                             }
                            
                         } else{
-                            await UserAccount.updateOne({email:email},
+                            let data = await UserAccount.updateOne({email:email},
                                 {$push:{colaboratorDetails:{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,permission:permission}]}}}
-                            ).then(async (data)=>{
-                                if(data && data.acknowledged && data.modifiedCount > 0){
-                                    await addInventoryPermission(permission,ownerId,email)
-                                }
-                            })
-                        }  
-                    } else{
-                        await UserAccount.updateOne({email:email},
-                            {isColaborator:true,colaboratorDetails:[{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,permission:permission}]}]}
-                        ).then( async (data)=>{
+                            )
                             if(data && data.acknowledged && data.modifiedCount > 0){
                                 await addInventoryPermission(permission,ownerId,email)
                             }
-                        })
+                        }  
+                    } else{
+                        let data = await UserAccount.updateOne({email:email},
+                            {isColaborator:true,colaboratorDetails:[{ownerId:ownerId,ownerEmail:ownerEmail,details:[{level:level,permission:permission}]}]}
+                        )
+                        if(data && data.acknowledged && data.modifiedCount > 0){
+                            await addInventoryPermission(permission,ownerId,email)
+                        }
                     }
 
                 }         
