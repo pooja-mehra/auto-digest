@@ -17,17 +17,53 @@ const detailsSchema = new Schema({
 const usershoppingSchema = new Schema({
     userId:{
         type:ObjectId,
-        required: true
-    },
-    listName: {
-        type: String,
         required: true,
+        unique:true
     },
-   
-    items:{
-        type:[detailsSchema],
-        require:true
-    },
+    shoppingLists:{
+        type:[{
+            listName: {
+                type: String,
+                required: true,
+            },
+           
+            items:{
+                type:[detailsSchema],
+                require:true
+            },
+        
+            viewers:{
+                type:[{
+                    type: String,
+                    required:false,
+                    lowercase:true,
+                    trim:true,
+                    validate: {
+                    validator: function (v) {
+                        return /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/.test(v);
+                        },
+                    },
+                }],
+                required:false
+            },
+        
+            editors:{
+                type:[{
+                    type: String,
+                    required:false,
+                    lowercase:true,
+                    trim:true,
+                    validate: {
+                    validator: function (v) {
+                        return /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/.test(v);
+                        },
+                    },
+                }],
+                required:false
+            }
+        }],
+        required:true
+    }
     
 }, { collection: 'usershopping_list'});
 

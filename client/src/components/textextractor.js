@@ -43,14 +43,14 @@ export default function TextExtractor(prop) {
       try{  
         await axios.get(`${base_url}api/getscannedgrocerybycode`,{params:{code:parseInt(decodedText)}})
         .then((res)=>{
-          localStorage.setItem('code',decodedText)
+          window.sessionStorage.setItem('code',decodedText);
         if(res && res.status === 200 && res.data){
           setScannedData({name:res.data.name,qty:1})
         } else{
           setOpenAlert({isOpen:true,status:'warning', msg:'Item Not Found! Enter Item Name'})
         }
         })} catch(e){
-          console.log(e)
+          setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
         }
     };
 
@@ -232,12 +232,12 @@ export default function TextExtractor(prop) {
               Accept: 'application/json'}
             }).then((res)=>{
               if(res && res.data && res.data.success === true){
-                localStorage.removeItem('details')
+                window.sessionStorage.removeItem('details')
                 setOpenAlert({isOpen:true,status:'success',msg:'Items sucessfully added to Inventory'})
               }
             })
           } catch(e){
-            console.log(e)
+            setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
           }
           setOcr([]) 
         } else{
@@ -288,7 +288,7 @@ export default function TextExtractor(prop) {
       <div style={{ width:'95vw',marginLeft:'auto',marginRight:'auto'}}>
           {
             openAlert.isOpen &&
-            <Alert variant="filled" severity={openAlert.status}>{openAlert.msg}</Alert>
+            <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
           }
       </div>
       <div className="listFooter" >
@@ -296,16 +296,21 @@ export default function TextExtractor(prop) {
             <Tooltip title='Clear List' enterTouchDelay={0}>
             <Button size="small" variant="contained" onClick={()=>{
               setOpenDialog({isOpen:true,dialogType:'clear'})
-            }}><ClearIcon size="small"/>{!isMobile && 'Clear List'}</Button>
+            }}>
+            {!isMobile && 
+              <ClearIcon size="small"/>}
+            Clear List</Button>
             </Tooltip>
           </div>
           <div  className="file-upload">
             <Tooltip title='Upload Image of Reciept from Device' enterTouchDelay={0}>
             <Button size="small" variant="contained"
             onClick={()=>fileInputRef.current.click()}>
-            <UploadIcon size="small">
-            </UploadIcon>
-            {!isMobile &&  'Device Upload'}
+            {!isMobile &&  
+              <UploadIcon size="small">
+              </UploadIcon>
+            }
+            Device Upload
             </Button>
             <input
             type="file"
@@ -320,15 +325,21 @@ export default function TextExtractor(prop) {
           </div>
           <div className="camera">
             <Tooltip title='Take a Picture of Reciept' enterTouchDelay={0}>
-              <Button size="small" variant="contained" onClick = {()=> setOpen(!open)}>    
-              <PhotoCameraIcon size="small"></PhotoCameraIcon> 
-              {!isMobile && 'Capture Photo'}</Button>
+              <Button size="small" variant="contained" onClick = {()=> setOpen(!open)}> 
+              {!isMobile && 
+                <PhotoCameraIcon size="small"></PhotoCameraIcon> 
+              }   
+              Capture Reciept</Button>
             </Tooltip>
           </div>
           <div className="camera">
             <Tooltip title='Scan Barcode' enterTouchDelay={0}>
               <Button size="small" variant="contained"  onClick = {()=> setOpenScanner(!openScanner)}>
-              <QrCodeScannerIcon size="small"></QrCodeScannerIcon>{!isMobile && 'Scan Barcode'}</Button>  
+              {
+                !isMobile &&
+                <QrCodeScannerIcon size="small"></QrCodeScannerIcon>
+              }
+             Scan Barcode</Button>  
             </Tooltip>
           </div>
           <div className="file-upload">
@@ -337,7 +348,13 @@ export default function TextExtractor(prop) {
                 setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
                 prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
               }}>
-              <SaveIcon size="small"/>{!isMobile && 'Save Inventory'}</Button>
+
+              {
+                !isMobile &&
+                <SaveIcon size="small"/>
+                
+              }
+              Save Inventory</Button>
             </Tooltip>
           </div>
         </div>

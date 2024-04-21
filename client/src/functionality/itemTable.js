@@ -1,4 +1,4 @@
-import {useEffect,useState, Fragment} from 'react';
+import {useState, Fragment} from 'react';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -19,7 +19,7 @@ import Fab from '@mui/material/Fab';
 import SaveIcon from '@mui/icons-material/Save';
 
 export default function ItemTable(props) {
-  const {shoppingList,type,details,consumed} = props
+  const {shoppingList,type,details,consumed,permission} = props
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [open, setOpen] = useState({isOpen:false,id:-1});
@@ -33,10 +33,6 @@ export default function ItemTable(props) {
     setPage(0);
   };
 
-  useEffect(()=>{
-  },)
-
- 
   return (
     <Paper sx={{ width: '95%', overflow: 'auto', margin:'auto' ,marginTop:'1vh',marginBottom:'1vh'}}>
       <TableContainer style={{height:'100%',margin:'auto'}}>
@@ -93,12 +89,12 @@ export default function ItemTable(props) {
                             setOpen({isOpen:!open.isOpen,id:(i+(page*rowsPerPage))})
                           }}/></Fab> :
                           <Fab size="small" aria-label="add"><KeyboardArrowDownIcon onClick={()=>{
-                            props.getDetails(row.name)
+                            props.getDetails(row.name,row.account)
                             setOpen({isOpen:!open.isOpen,id:(i+(page*rowsPerPage))})
                           }}/></Fab>
                         }
                         </TableCell>:
-                        <TableCell id = {column.id+(i+page * rowsPerPage)} key={column.id+(i+page * rowsPerPage)} contentEditable={(props.type === 'presentList' || props.type === 'shoppingList') && column.id !== 'addicon'} 
+                        <TableCell id = {column.id+(i+page * rowsPerPage)} key={column.id+(i+page * rowsPerPage)} contentEditable={((props.type === 'presentList' || props.type === 'shoppingList') && permission !== 'View Only') && column.id !== 'addicon'} 
                         suppressContentEditableWarning={true} align={column.align} 
                         onMouseOver={()=>{
                           (props.type === 'presentList'|| props.type === 'shoppingList') && HandleMouseOver(column.id+(i+page * rowsPerPage))
@@ -132,7 +128,7 @@ export default function ItemTable(props) {
                             </TableHead>
                             <TableBody>
                             {
-                                details && 
+                                details &&  details.details &&  details.details.length>0 &&
                                 details.details.map((item,index)=>{
                                   return(
                                     <TableRow>
@@ -153,8 +149,8 @@ export default function ItemTable(props) {
                               <TableCell style={{color:'white'}}>{details?details.qty:0}
                               </TableCell>
                               <TableCell style={{color:'white',backgroundColor:'#673ab7',}}>Used:</TableCell>
-                              <TableCell style={{color:'white'}} id={'used'+(i+(page*rowsPerPage))} contentEditable ={true} suppressContentEditableWarning={true}
-                              ><input type="number" min ="0" max={details && details.qty} value={consumed?consumed.used:0} onChange={(e)=>{
+                              <TableCell style={{color:'white'}} id={'used'+(i+(page*rowsPerPage))}>
+                              <input disabled={details && details.permission === 'view'} type="number" min ="0" max={details && details.qty} value={consumed?consumed.used:0} onChange={(e)=>{
                                 props.changeDetails(parseInt(e.target.value),details.qty - parseInt(e.target.value))}}/>
                               </TableCell>
                               <TableCell style={{backgroundColor:'#673ab7',color:'white'}}>Left:</TableCell>
