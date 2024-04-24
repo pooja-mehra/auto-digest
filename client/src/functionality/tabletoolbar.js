@@ -146,7 +146,7 @@ export default function TableToolbar(props){
         freeSolo
         fullWidth
         renderInput={(params) => (
-          <TextField  {...params} label="Type to Add Title / Choose Existing List" onClick={(e)=>{
+          <TextField  {...params} label="Add Title to Create New List / Choose Existing List" onClick={(e)=>{
             if(listName ==='' && listItems.length > 0){
                 isDisable(true)
             }else{

@@ -25,7 +25,7 @@ export default function HeaderTabs() {
             <Tab icon={<LibraryAddIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="upload" label="Add to Inventory">
             </Tab>
             <Tab icon={<InsightsIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Insights"/>
-            <Tab icon={<AddShoppingCartIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Shopping List"/>
+            <Tab icon={<AddShoppingCartIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Shopping"/>
 
         </Tabs>       
         <div>
