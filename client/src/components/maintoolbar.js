@@ -9,7 +9,8 @@ import SideDrawer from '../shared/sidedrawer';
 import ColaborateDialog from '../shared/colaboratedialog';
 import { UserContext } from "../App"
 import Alert from '@mui/material/Alert';
-
+import Demo from './demo'
+import { Button } from '@mui/material';
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function MainToolabr(props){
@@ -131,7 +132,6 @@ export default function MainToolabr(props){
       <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
     }
       <Toolbar style={{backgroundColor:'#482880'}}>
-      
         <div style={{width: '100%',float: 'left'}}>
         <div style={{float:'left', backgroundColor:'#482880'}} >
         <SideDrawer signout={signout} showColaborationDialog ={showColaborationDialog} />
@@ -155,6 +155,9 @@ export default function MainToolabr(props){
             onClick={() => login()}
           />
           }
+          </div>
+          <div style={{float:'right', backgroundColor:'#482880', marginRight:10}} >
+          <Demo frame={0}/>
           </div>
         </div>
        
