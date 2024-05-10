@@ -3,4 +3,4 @@ Technology stack: React.js, Node.js, Express.js, Redis, Web Sockets, Mongo Atlas
 deployed on Render:
 https://auto-digest.onrender.com/
 
-Click on Demo Button at the top right corner of the above application for better navigation!
+Click on the Demo Button at the top right at https://auto-digest.onrender.com/ for navigation!
