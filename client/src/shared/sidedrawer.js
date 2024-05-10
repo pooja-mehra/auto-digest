@@ -46,13 +46,14 @@ export default function SideDrawer(props) {
 
   return (
     <div>
-          <Button style={{color:'white'}} onClick={toggleDrawer(true)}><MenuSharpIcon/></Button>
+          <Button style={{color:'white'}} onClick={toggleDrawer(true)}><MenuSharpIcon id='menu'/></Button>
           <Drawer
             anchor={'left'}
             open={state}
             onClose={toggleDrawer(false)}
           >
             {list('left')}
+            <Button onClick={toggleDrawer(false)} id="closedrawer">Close</Button>
           </Drawer>
     </div>
   );

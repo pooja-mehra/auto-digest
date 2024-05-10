@@ -24,7 +24,7 @@ import {isMobile} from 'react-device-detect';
 import PaperComponent from '../shared/draggablecomponent';
 import { DialogTitle } from "@mui/material";
 import ClearAllDialog from "../shared/cleardialog";
-
+import Pointer from '../shared/pointer';
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function TextExtractor(prop) {
@@ -197,7 +197,7 @@ export default function TextExtractor(prop) {
       return new File([u8arr], filename, {type:mime});
   }
 
-    const header=[{id:'addicon',label:<Fab size="small" aria-label="add"><AddIcon /></Fab>,maxWidth: 50,type:'icon'},
+    const header=[{id:'addicon',label:<Fab size="small" aria-label="add"><AddIcon id='addicon'/></Fab>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 170, type:"string"},
     {id:'qty',label:'Quantity',maxWidth: 50, type:"number"}]
 
@@ -273,6 +273,12 @@ export default function TextExtractor(prop) {
     
     return (
       <div className="main" style={{display: 'flex',height:'80vh',flexDirection:'column',overflowY:'auto',marginTop:'2vh'}}>
+      {
+        prop.demo &&
+        <div style={{position:'absolute',zIndex:2,left:prop.demo.x,top:prop.demo.y}}>
+          <Pointer position={{x:prop.demo.x,y:prop.demo.y}}></Pointer>
+        </div>
+      }
       <BarcodeScanner handleScan={handleScan} openScanner={openScanner} setScanStatus={setScanStatus}/> 
       {
         open &&
@@ -307,7 +313,7 @@ export default function TextExtractor(prop) {
             <Button size="small" variant="contained"
             onClick={()=>fileInputRef.current.click()}>
             {!isMobile &&  
-              <UploadIcon size="small">
+              <UploadIcon size="small" id="deviceupload">
               </UploadIcon>
             }
             Device Upload
@@ -327,7 +333,7 @@ export default function TextExtractor(prop) {
             <Tooltip title='Take a Picture of Reciept' enterTouchDelay={0}>
               <Button size="small" variant="contained" onClick = {()=> setOpen(!open)}> 
               {!isMobile && 
-                <PhotoCameraIcon size="small"></PhotoCameraIcon> 
+                <PhotoCameraIcon size="small" id='capturereceipt'></PhotoCameraIcon> 
               }   
               Capture Reciept</Button>
             </Tooltip>
@@ -337,7 +343,7 @@ export default function TextExtractor(prop) {
               <Button size="small" variant="contained"  onClick = {()=> setOpenScanner(!openScanner)}>
               {
                 !isMobile &&
-                <QrCodeScannerIcon size="small"></QrCodeScannerIcon>
+                <QrCodeScannerIcon size="small" id='scanbarcode'></QrCodeScannerIcon>
               }
              Scan Barcode</Button>  
             </Tooltip>
@@ -351,7 +357,7 @@ export default function TextExtractor(prop) {
 
               {
                 !isMobile &&
-                <SaveIcon size="small"/>
+                <SaveIcon size="small" id='saveinventory'/>
                 
               }
               Save Inventory</Button>

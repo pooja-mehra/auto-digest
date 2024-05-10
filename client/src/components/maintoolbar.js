@@ -11,13 +11,21 @@ import { UserContext } from "../App"
 import Alert from '@mui/material/Alert';
 import Demo from './demo'
 import { Button } from '@mui/material';
+import Pointer from '../shared/pointer';
+
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function MainToolabr(props){
   const [user, setUser] = useState({email:'',avatar:'',userId:'', accounts:[]})
+  const [demo, setDemo] = useState(null)
   const [colborationDilaog,setColaborationDialog] = useState(false)
   const [colaboratorDetails,setColaboratorDetails] = useState([])
   const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
+
+  useEffect(()=>{
+    console.log(demo)
+    demo ? props.setDemoContext({x:demo.x,y:demo.y}) :props.setDemoContext(null)
+  },[demo])
 
   useEffect(()=>{
     props.setUser(user)
@@ -28,6 +36,10 @@ export default function MainToolabr(props){
       setOpenAlert({isOpen:false,status:'none',msg:''})
     },2000)
   },[openAlert])
+
+  const setDemovalues = (demoValue,isdemo) =>{
+    isdemo ? setDemo(demoValue) : setDemo(null)
+  }
 
   const login = useGoogleLogin({
     onSuccess: async (codeResponse) => {
@@ -133,10 +145,10 @@ export default function MainToolabr(props){
     }
       <Toolbar style={{backgroundColor:'#482880'}}>
         <div style={{width: '100%',float: 'left'}}>
-        <div style={{float:'left', backgroundColor:'#482880'}} >
+        <div style={{float:'left', backgroundColor:'#482880'}} id='main'>
         <SideDrawer signout={signout} showColaborationDialog ={showColaborationDialog} />
         </div>
-          <div style={{float:'right', backgroundColor:'#482880'}} >
+          <div style={{float:'right', backgroundColor:'#482880'}} id="signin">
           {
             user && user.email !== ''? 
               <Chip
@@ -157,10 +169,15 @@ export default function MainToolabr(props){
           }
           </div>
           <div style={{float:'right', backgroundColor:'#482880', marginRight:10}} >
-          <Demo frame={0}/>
+          <Demo frame={0} setDemo={setDemovalues}/>
           </div>
         </div>
-       
+        {
+          demo &&
+          <div style={{position:'absolute',zIndex:2,left:demo.x,top:demo.y}}>
+            <Pointer position={{x:demo.x,y:demo.y}}></Pointer>
+          </div>
+        }
       </Toolbar>
       {
         colborationDilaog &&
@@ -169,6 +186,8 @@ export default function MainToolabr(props){
         listName={null} colaboratorDetails={colaboratorDetails} userId={value?value.userId:null} userEmail={value?value.email:null}/>}
         </UserContext.Consumer>
       }
+     
       </div>
+      
     );
 }

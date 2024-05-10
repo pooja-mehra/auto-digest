@@ -72,7 +72,7 @@ export default function TableToolbar(props){
         <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
       }
       </div>
-        <div style={{display:'flex',width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
+        <div style={{display:'flex',width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}} id ='listtitle'> 
         <Autocomplete
         value={title}
         getOptionDisabled={(option) => listNames.includes(option.listName) && disable}
@@ -146,7 +146,7 @@ export default function TableToolbar(props){
         freeSolo
         fullWidth
         renderInput={(params) => (
-          <TextField  {...params} label="Add Title to Create New List / Choose Existing List" onClick={(e)=>{
+          <TextField {...params} label="Add Title to Create New List / Choose Existing List" onClick={(e)=>{
             if(listName ==='' && listItems.length > 0){
                 isDisable(true)
             }else{

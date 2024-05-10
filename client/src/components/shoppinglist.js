@@ -16,6 +16,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ClearAllDialog from "../shared/cleardialog";
 import InventoryFilters from "../shared/inventoryfilters";
 import useWebSocket from 'react-use-websocket';
+import Pointer from "../shared/pointer";
 
 const base_url = process.env.REACT_APP_BASE_URL
 const ws_url = process.env.REACT_APP_WS
@@ -465,9 +466,15 @@ export default function ShoppingList(prop) {
 
     return(
         <div className="main" style={{display: 'flex',height:'80vh', flexDirection:'column'}}>
-        <div className="layout" >
+        {
+          prop.demo &&
+          <div style={{position:'absolute',zIndex:2,left:prop.demo.x,top:prop.demo.y}}>
+            <Pointer position={{x:prop.demo.x,y:prop.demo.y}}></Pointer>
+          </div>
+        }
+        <div className="layout">
         <TableToolbar listName={shoppingList.listName} items = {shoppingList.items} setShoppingListTitle={setShoppingListTitle} 
-        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList} 
+        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList}
         userId={prop.userId} setpermissions={setpermissions}></TableToolbar>
         <div className='presentlist'>
         <ItemTable shoppingList={shoppingList.items} permission={shoppingList.permission} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'shoppingList'}/>
@@ -483,7 +490,7 @@ export default function ShoppingList(prop) {
                   shoppingList.ownedBy === prop.userEmail ?setUserShoppingList(): editOwnerShoppingList()
                 }}>
                 {!isMobile && 
-                  <AddBoxIcon size="small"/>
+                  <AddBoxIcon size="small" id='savelist'/>
                 }
                 Save Shopping List</Button>
               </Tooltip>
@@ -507,7 +514,7 @@ export default function ShoppingList(prop) {
               }}>
               {
                 !isMobile && 
-                  <SaveIcon size="small"/>
+                  <SaveIcon size="small" id='saveinventory'/>
               }
               Save Inventory</Button>
               </Tooltip>
@@ -516,18 +523,22 @@ export default function ShoppingList(prop) {
           </div>
         </div>
         </div>
-        <div className="layout" >
+        <div className="layout">
         {
           prop.userEmail && prop.userId && prop.accounts &&  prop.accounts.length > 0 &&
           <InventoryFilters getUserGrocery ={getUserGrocery} accounts={prop.accounts} />
         }
         {
           (details !== null || details !== undefined) &&
-          <div className="pastlist">
-          <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
-          changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
-          header={shoppedHeader}/>
-        </div>
+          <div className="pastlist" >
+          {
+            <div id='inventorytable' style={{display:'flex', paddingTop:'4vh', width:'95vw'}}></div>
+          }
+            <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
+            changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
+            header={shoppedHeader}>
+            </ItemTable>
+          </div>
 
         }
         </div>

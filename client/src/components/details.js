@@ -6,6 +6,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 import SimpleDialog from '../functionality/simpleDialog';
 import Alert from '@mui/material/Alert';
+import Pointer from '../shared/pointer';
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function Details(prop) {
@@ -200,6 +201,12 @@ const getData =() =>{
 
     return (
         <div className="main" >
+        {
+            prop.demo &&
+            <div style={{position:'absolute',zIndex:2,left:prop.demo.x,top:prop.demo.y}}>
+              <Pointer position={{x:prop.demo.x,y:prop.demo.y}}></Pointer>
+            </div>
+          }
             <div className="listHeader">
             {
                 (details !== null || (details && details.length >0)) &&
@@ -217,7 +224,7 @@ const getData =() =>{
             />
             </div>
             }
-            <Button size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} 
+            <Button id='insightfilters' size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} 
             onClick={()=>{ prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
             }}> Purchase Date</Button>
         </div>

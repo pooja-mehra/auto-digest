@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import TextExtractor from "./textextractor";
@@ -8,6 +8,7 @@ import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import ShoppingList from "./shoppinglist";
 import { UserContext } from "../App"
+import { DemoContext } from "../App";
 
 export default function HeaderTabs() {
     const [tabNumber, setTabNumber] = useState(()=>{
@@ -22,18 +23,23 @@ export default function HeaderTabs() {
     return (
         <div>
         <Tabs value={tabNumber} onChange={handleChange} aria-label="icon tabs example" style={{height:'auto',backgroundColor:'#673ab7'}}>
-            <Tab icon={<LibraryAddIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="upload" label="Add to Inventory">
+            <Tab icon={<LibraryAddIcon id="addtoinventory"/>} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="upload" label="Add to Inventory">
             </Tab>
-            <Tab icon={<InsightsIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Insights"/>
-            <Tab icon={<AddShoppingCartIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Shopping"/>
+            <Tab icon={<InsightsIcon id= "insights"/>} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Insights"/>
+            <Tab icon={<AddShoppingCartIcon id="shopping"/>} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Shopping"/>
 
         </Tabs>       
         <div>
             {
                 tabNumber === 0 &&
+                <Fragment>
                 <UserContext.Consumer>
                 {value => <TextExtractor userId={value?value.userId:null}/>}
                 </UserContext.Consumer>
+                <DemoContext.Consumer>
+                {value => <TextExtractor demo={value?value:null}/>}
+                </DemoContext.Consumer>
+                </Fragment>
             }
             {
                 tabNumber === 1 &&
