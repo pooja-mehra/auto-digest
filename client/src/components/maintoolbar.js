@@ -9,23 +9,35 @@ import SideDrawer from '../shared/sidedrawer';
 import ColaborateDialog from '../shared/colaboratedialog';
 import { UserContext } from "../App"
 import Alert from '@mui/material/Alert';
-import Demo from './demo'
-import { Button } from '@mui/material';
-import Pointer from '../shared/pointer';
-
+import Walkabout from  'react-demo-tour'
+import AddIcon from '@mui/icons-material/Add';
+import ShareIcon from '@mui/icons-material/Share';
+import MenuIcon from '@mui/icons-material/Menu';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function MainToolabr(props){
   const [user, setUser] = useState({email:'',avatar:'',userId:'', accounts:[]})
-  const [demo, setDemo] = useState(null)
   const [colborationDilaog,setColaborationDialog] = useState(false)
   const [colaboratorDetails,setColaboratorDetails] = useState([])
   const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
 
-  useEffect(()=>{
-    console.log(demo)
-    demo ? props.setDemoContext({x:demo.x,y:demo.y}) :props.setDemoContext(null)
-  },[demo])
+  const links =[{texts:['Add Items to Inventory',
+    'Click on Add Icon on Left','Upload Image of Receipt from Device','Take a Picture of Receipt','Scan Barcode of Items',
+    'Save the Inventory on Select Date'],
+    labels:['ADD TO INVENTORY',<AddIcon/>,'DEVICE UPLOAD', 'CAPTURE RECEIPT', 'SCAN BARCODE', 'SAVE INVENTORY'],
+    pointers:['addtoinventory','addicon', 'deviceupload', 'capturereceipt','scanbarcode','saveinventory'],
+    images:{0:'./addinventory.png',1:'./additem.png',5:'./selectdate.png'},linkName:'addtoinventory'},
+    {linkName:'insights', texts:['Select Insights tab','Select Items and Purcahse Date'], pointers:['insights','insightfilters'],
+    labels:['INSIGHTS','Select Items/Select Purcahse Date'], images:{1:'./insights.png'}},
+    {linkName:'shopping', texts:['Select Shopping Tab','Create or Select a Shopping List, Add Items and Save',
+    'Click Share Icon next to shopping list to Share','Add Items to Inventory after Purchase','List of Inventories among Shared Accounts',
+    'Click Arrowdown Icon to See and edit Details of Purchased Items','From main Menu Select Set Permissions to share inventory details'],
+    labels:['SHOPPING','SAVE SHOPPING LIST',<ShareIcon/>,'SAVE INVENTORY','',<KeyboardArrowDownIcon/>,<MenuIcon/>],
+    pointers:['shopping','savelist','listtitle','saveinventory','inventorytable','inventorytable','menu'],
+    images:{1:'./createshoppinglist.png',2:'./listpermission.png',3:'./selectdate.png',4:'./accounttable.png',5:'./used.png',6:'./setpermissions.png',}}
+    ]
 
   useEffect(()=>{
     props.setUser(user)
@@ -36,10 +48,6 @@ export default function MainToolabr(props){
       setOpenAlert({isOpen:false,status:'none',msg:''})
     },2000)
   },[openAlert])
-
-  const setDemovalues = (demoValue,isdemo) =>{
-    isdemo ? setDemo(demoValue) : setDemo(null)
-  }
 
   const login = useGoogleLogin({
     onSuccess: async (codeResponse) => {
@@ -168,16 +176,8 @@ export default function MainToolabr(props){
           />
           }
           </div>
-          <div style={{float:'right', backgroundColor:'#482880', marginRight:10}} >
-          <Demo frame={0} setDemo={setDemovalues}/>
-          </div>
+          <Walkabout links={links} pointer={{bgColor:'red'}}></Walkabout>
         </div>
-        {
-          demo &&
-          <div style={{position:'absolute',zIndex:2,left:demo.x,top:demo.y}}>
-            <Pointer position={{x:demo.x,y:demo.y}}></Pointer>
-          </div>
-        }
       </Toolbar>
       {
         colborationDilaog &&

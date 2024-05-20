@@ -16,7 +16,6 @@ import SaveIcon from '@mui/icons-material/Save';
 import ClearAllDialog from "../shared/cleardialog";
 import InventoryFilters from "../shared/inventoryfilters";
 import useWebSocket from 'react-use-websocket';
-import Pointer from "../shared/pointer";
 
 const base_url = process.env.REACT_APP_BASE_URL
 const ws_url = process.env.REACT_APP_WS
@@ -466,12 +465,6 @@ export default function ShoppingList(prop) {
 
     return(
         <div className="main" style={{display: 'flex',height:'80vh', flexDirection:'column'}}>
-        {
-          prop.demo &&
-          <div style={{position:'absolute',zIndex:2,left:prop.demo.x,top:prop.demo.y}}>
-            <Pointer position={{x:prop.demo.x,y:prop.demo.y}}></Pointer>
-          </div>
-        }
         <div className="layout">
         <TableToolbar listName={shoppingList.listName} items = {shoppingList.items} setShoppingListTitle={setShoppingListTitle} 
         listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList}
@@ -486,11 +479,11 @@ export default function ShoppingList(prop) {
           <div className='shoppinglistFooter'>
           <div  className="shoppingfile-upload">
                 <Tooltip title='Save Shopping List' enterTouchDelay={0}>
-                <Button size="small" variant="contained" onClick={()=>{
+                <Button size="small" variant="contained"  id='savelist' onClick={()=>{
                   shoppingList.ownedBy === prop.userEmail ?setUserShoppingList(): editOwnerShoppingList()
                 }}>
                 {!isMobile && 
-                  <AddBoxIcon size="small" id='savelist'/>
+                  <AddBoxIcon size="small" />
                 }
                 Save Shopping List</Button>
               </Tooltip>
@@ -508,13 +501,13 @@ export default function ShoppingList(prop) {
             </div>
             <div className='shoppingfile-upload'>
               <Tooltip title='Save Inventory' enterTouchDelay={0}>
-              <Button size="small" variant="contained" onClick={()=>{
+              <Button size="small" variant="contained" id='saveinventory' onClick={()=>{
                 setShoppingList({...shoppingList,items:shoppingList.items.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0)})
                 prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
               }}>
               {
                 !isMobile && 
-                  <SaveIcon size="small" id='saveinventory'/>
+                  <SaveIcon size="small"/>
               }
               Save Inventory</Button>
               </Tooltip>

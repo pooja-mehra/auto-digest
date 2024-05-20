@@ -24,7 +24,6 @@ import {isMobile} from 'react-device-detect';
 import PaperComponent from '../shared/draggablecomponent';
 import { DialogTitle } from "@mui/material";
 import ClearAllDialog from "../shared/cleardialog";
-import Pointer from '../shared/pointer';
 const base_url = process.env.REACT_APP_BASE_URL
 
 export default function TextExtractor(prop) {
@@ -273,18 +272,12 @@ export default function TextExtractor(prop) {
     
     return (
       <div className="main" style={{display: 'flex',height:'80vh',flexDirection:'column',overflowY:'auto',marginTop:'2vh'}}>
-      {
-        prop.demo &&
-        <div style={{position:'absolute',zIndex:2,left:prop.demo.x,top:prop.demo.y}}>
-          <Pointer position={{x:prop.demo.x,y:prop.demo.y}}></Pointer>
-        </div>
-      }
       <BarcodeScanner handleScan={handleScan} openScanner={openScanner} setScanStatus={setScanStatus}/> 
       {
         open &&
         <CustomWebcam />
       }
-      <div  style={{display: 'flex',height:'80vh',flexDirection:'column'}}>
+      <div  style={{display: 'flex',height:'80vh',flexDirection:'column', zIndex:1}}>
       {     
         imageData != null && !parsedItem ?
         <LoadingSpinner  />  :
@@ -308,12 +301,12 @@ export default function TextExtractor(prop) {
             Clear List</Button>
             </Tooltip>
           </div>
-          <div  className="file-upload">
+          <div  className="file-upload" >
             <Tooltip title='Upload Image of Reciept from Device' enterTouchDelay={0}>
-            <Button size="small" variant="contained"
+            <Button size="small" variant="contained"  id="deviceupload"
             onClick={()=>fileInputRef.current.click()}>
             {!isMobile &&  
-              <UploadIcon size="small" id="deviceupload">
+              <UploadIcon size="small" >
               </UploadIcon>
             }
             Device Upload
@@ -331,7 +324,7 @@ export default function TextExtractor(prop) {
           </div>
           <div className="camera">
             <Tooltip title='Take a Picture of Reciept' enterTouchDelay={0}>
-              <Button size="small" variant="contained" onClick = {()=> setOpen(!open)}> 
+              <Button size="small" variant="contained" onClick = {()=> setOpen(!open)} id='capturereceipt'> 
               {!isMobile && 
                 <PhotoCameraIcon size="small" id='capturereceipt'></PhotoCameraIcon> 
               }   
@@ -340,24 +333,24 @@ export default function TextExtractor(prop) {
           </div>
           <div className="camera">
             <Tooltip title='Scan Barcode' enterTouchDelay={0}>
-              <Button size="small" variant="contained"  onClick = {()=> setOpenScanner(!openScanner)}>
+              <Button size="small" variant="contained"  onClick = {()=> setOpenScanner(!openScanner)} id='scanbarcode'>
               {
                 !isMobile &&
-                <QrCodeScannerIcon size="small" id='scanbarcode'></QrCodeScannerIcon>
+                <QrCodeScannerIcon size="small" ></QrCodeScannerIcon>
               }
              Scan Barcode</Button>  
             </Tooltip>
           </div>
           <div className="file-upload">
             <Tooltip title='Add to Inventory' enterTouchDelay={0}>
-              <Button size="small"  variant="contained"  onClick={()=>{
+              <Button size="small"  variant="contained" id='saveinventory' onClick={()=>{
                 setOcr(ocr.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0))
                 prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
               }}>
 
               {
                 !isMobile &&
-                <SaveIcon size="small" id='saveinventory'/>
+                <SaveIcon size="small"/>
                 
               }
               Save Inventory</Button>

@@ -38,6 +38,7 @@
     "react-scripts": "5.0.1",
     "react-spinners": "^0.13.8",
     "react-use-websocket": "^4.8.1",
+    "react-demo-tour": "^1.0.1",
     "react-webcam": "^7.1.1",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",

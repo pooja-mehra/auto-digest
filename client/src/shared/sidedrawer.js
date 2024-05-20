@@ -13,8 +13,8 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export default function SideDrawer(props) {
   const [state, setState] = useState(false)
-  const listItems = [{title:'Set Pemissions',icon:<AdminPanelSettingsIcon/>,action:props.showColaborationDialog},
-      {title:'SIGNOUT',icon:<ExitToAppSharpIcon/>,action:props.signout}]
+  const listItems = [{title:'Set Pemissions',icon:<AdminPanelSettingsIcon/>,action:props.showColaborationDialog, id:'adminsettings'},
+      {title:'SIGNOUT',icon:<ExitToAppSharpIcon/>,action:props.signout, id:'signout'}]
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
@@ -32,7 +32,7 @@ export default function SideDrawer(props) {
       <List>
         {listItems.map((item, index) => (
           <ListItem key={item.title} disablePadding>
-            <ListItemButton onClick={item.action}>
+            <ListItemButton id ={item.id} onClick={item.action}>
               <ListItemIcon>
                 {item.icon}
               </ListItemIcon>
@@ -46,7 +46,7 @@ export default function SideDrawer(props) {
 
   return (
     <div>
-          <Button style={{color:'white'}} onClick={toggleDrawer(true)}><MenuSharpIcon id='menu'/></Button>
+          <Button id='menu' style={{color:'white'}} onClick={toggleDrawer(true)}><MenuSharpIcon/></Button>
           <Drawer
             anchor={'left'}
             open={state}
