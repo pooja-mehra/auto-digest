@@ -36,7 +36,6 @@ export default function ShoppingList(prop) {
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
     const [details, setDetails]  = useState(null)
     const [consumed,setConsumed] = useState({used:0,left:0})
-    
     const header=[{id:'addicon',label:<Fab size="small" aria-label="add"><AddIcon /></Fab>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 50, type:"string"},
     {id:'qty',label:'Quantity',minWidth: 50, type:"number"}]
@@ -539,7 +538,7 @@ export default function ShoppingList(prop) {
           openDialog.dialogType === 'simple'?
           <SimpleDialog openDialog ={openDialog.isOpen} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
           :openDialog.dialogType === 'clear' &&
-          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll}></ClearAllDialog>
+          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll} isDelete ={false}></ClearAllDialog>
         }
         </div>
     )

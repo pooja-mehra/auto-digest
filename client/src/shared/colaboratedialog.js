@@ -11,12 +11,13 @@ import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
-import MultipleSelect from '../shared/multiselect';
 
 const filter = createFilterOptions();
 export default function ColaborateDialog(props){
     const {colborationDilaog,listName,colaboratorDetails, userEmail} = props
-    const colboratorsEmail = colaboratorDetails.length> 0 ?colaboratorDetails.map((c)=>c.email):[]
+    const colboratorsEmail = colaboratorDetails.length> 0 ?colaboratorDetails.map((c)=>c.email + '(' + c.colaboratorDetails[0].permission + ')'):[]
+    const colborators = colaboratorDetails.length> 0 ?colaboratorDetails.map((c)=> {
+      return({email:c.email, permission: c.colaboratorDetails[0].permission})}):[]
     let emails = []
     let permission = 'view'
     let accountType= 'inventories'
@@ -25,24 +26,26 @@ export default function ColaborateDialog(props){
             <Autocomplete
                 multiple
                 options={colboratorsEmail}
-                getOptionLabel={(option) => option}
+                getOptionLabel={(option) => option }
                 filterSelectedOptions
                 filterOptions={(options, params) => {
                 const filtered = filter(options, params);
                 const { inputValue } = params;
-                // Suggest the creation of a new value
-                const isExisting = options.some((option) => inputValue === option);
-                if (inputValue !== '' && !isExisting && inputValue.toLowerCase() !== userEmail &&
-                /^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})*$/.test(inputValue)) {
+                const isExisting = colboratorsEmail.some((option) => inputValue.trim().toLowerCase() === option.split('(')[0]);
+                if (inputValue !== '' && !isExisting && inputValue.trim().toLowerCase() !== userEmail 
+                && /^([a-z0-9._%-]+@[a-z0-9.-]+\.[a-z]{2,6})*$/.test(inputValue.trim().toLowerCase())
+                ){
                   filtered.push(
-                    `Add Email: ${inputValue}`,
+                    inputValue.trim().toLowerCase(),
                   );
                 }
                 return filtered;
               }}
               onChange={async (event, newValue) => {
                 if(newValue !== null){
-                  emails = newValue.map((value)=>!colboratorsEmail.includes(value.toLowerCase()) ? value.replace('Add Email:' ,''):value.toLowerCase())
+                  emails = newValue.map((value)=>! (colboratorsEmail.includes(value.toLowerCase()) && colboratorsEmail.map((c)=>c.split('(')[0].includes(value.toLowerCase()))) 
+                  ? value
+                  : value.split('(')[0].toLowerCase())
                 }       
                 }}
               selectOnFocus
@@ -52,8 +55,7 @@ export default function ColaborateDialog(props){
               renderOption={(props, option) => <li {...props}>{option}</li>}
               sx={{ width: 320 }}
               renderInput={(params) => (
-                <TextField {...params} label="Select/Add Email"  style={{paddingTop:5, marginTop:5}}
-                >{emails}</TextField>
+                <TextField {...params} label="Select/Add Email"  style={{paddingTop:5, marginTop:5}}></TextField>
               )}
             />
           );

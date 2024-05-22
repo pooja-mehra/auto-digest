@@ -681,12 +681,37 @@ router.post('/confirmuser', async(req, res, next) => {
 })
 
 router.get('/getcolaboratorsemail', (req,res,next)=>{
+    const {listName} = req.query
     let userId = req.headers.authorization && req.headers.authorization.match(/^Bearer (.*)$/);
     if (userId && userId[1] && mongoose.isValidObjectId(userId[1])) {
          userId = userId[1]
         try{
-            UserAccount.find({"colaboratorDetails.ownerId":userId},
-            {_id:0,email:1}).then((data)=>{
+            UserAccount.aggregate([
+                {
+                    $unwind: 
+                        "$colaboratorDetails"
+            
+                },
+                {
+                  $match: {
+                    "colaboratorDetails.ownerId": new ObjectId(userId), "colaboratorDetails.details.shoppinglistName":listName
+                  },
+                },
+                {
+                  $project: {
+                    _id: 0,
+                    email: 1,
+                    colaboratorDetails: {
+                        $filter: {
+                            input: "$colaboratorDetails.details",
+                            as: "details",
+                            cond: { $eq: ["$$details.shoppinglistName", listName] },
+                        }
+                    },
+                  },
+                },
+              ])
+            .then((data)=>{
                 res.json(data)
             })
         } catch(e){

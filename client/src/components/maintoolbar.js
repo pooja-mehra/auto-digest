@@ -122,6 +122,22 @@ export default function MainToolabr(props){
     }
   }
   const showColaborationDialog = async() =>{
+    if(user && user.userId !== ''){
+    try{
+      await axios.get(`${base_url}api/getcolaboratorsemail`,
+      { params:{listName:null},
+        headers: {
+          Authorization: `Bearer ${user.userId}`,
+          Accept: 'application/json'
+        }}).then((res)=>{
+          if(res && res.data){
+            setColaboratorDetails(res.data)
+          }
+      })
+    } catch(e){
+      setOpenAlert({isOpen:true,status:'error',msg:'Something went wrong!'})
+    }
+}
     setColaborationDialog(true)
   }
 

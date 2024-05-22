@@ -362,7 +362,7 @@ export default function TextExtractor(prop) {
           openDialog.dialogType === 'simple'?
           <SimpleDialog openDialog ={openDialog.isOpen} itemList={ocr} type = {'date'} setDialog={setDialog}></SimpleDialog>
           : openDialog.dialogType === 'clear' &&
-          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll}></ClearAllDialog>
+          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll} isDelete ={false}></ClearAllDialog>
         }
       </div>
     );
