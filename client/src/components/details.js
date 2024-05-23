@@ -217,7 +217,7 @@ const getData =() =>{
             />
             </div>
             }
-            <Button size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} 
+            <Button id='insightfilters' size="large" variant="outlined" style={{color:'grey', borderColor:'grey', border:'solid 0.5px'}} 
             onClick={()=>{ prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog(true)
             }}> Purchase Date</Button>
         </div>

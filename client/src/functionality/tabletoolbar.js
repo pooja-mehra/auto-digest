@@ -8,11 +8,11 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import ShareIcon from '@mui/icons-material/Share';
 import ColaborateDialog from '../shared/colaboratedialog';
-import FolderSharedIcon from '@mui/icons-material/FolderShared';
 import Chip from '@mui/material/Chip';
 import axios from 'axios';
 import { UserContext } from "../App"
 import Alert from '@mui/material/Alert';
+import ClearAllDialog from "../shared/cleardialog";
 
 const base_url = process.env.REACT_APP_BASE_URL
 
@@ -20,10 +20,10 @@ const filter = createFilterOptions();
 
 export default function TableToolbar(props){
     const {listName,listNames,items,userId} = props
-    const [title,setTitle] = useState(listName)
+    const [title,setTitle] = useState('')
     const [listItems,setListItems] = useState(items)
     const [disable,isDisable] = useState(false)
-    const [colborationDilaog,setColaborationDialog] = useState(false)
+    const [openDialog, setOpenDialog] = useState({isOpen:false,dialogType:''});
     const [colaboratorDetails,setColaboratorDetails] = useState([])
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'',msg:''})
 
@@ -38,20 +38,23 @@ export default function TableToolbar(props){
       },2000)
     },[openAlert])
 
-    const deleteList =(option) =>{
-      props.deleteList(option)
+    const clearAll = (isClear) =>{
+      isClear &&  props.deleteList(title)
+      setOpenDialog({isOpen:false,dialogType:''})
     }
 
     const setColaborateDialog = (isOpen,permission,emails,listName,accountType) =>{
       if(permission && permission !== null && emails && emails.length>0){
         props.setpermissions(permission,emails,listName)
       }
-      setColaborationDialog(isOpen)
+      setOpenDialog({isOpen:isOpen,dialogType:''})
     }
 
-    const getColaborators = async() =>{
+    const getColaborators = async(listName) =>{
       try{
-          await axios.get(`${base_url}api/getcolaboratorsemail`,{headers: {
+          await axios.get(`${base_url}api/getcolaboratorsemail`,
+          { params:{listName:listName},
+            headers: {
               Authorization: `Bearer ${userId}`,
               Accept: 'application/json'
           }}).then((res)=>{
@@ -72,7 +75,7 @@ export default function TableToolbar(props){
         <Alert severity={openAlert.status}>{openAlert.msg}</Alert>
       }
       </div>
-        <div style={{display:'flex',width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}}> 
+        <div style={{display:'flex',width:'95vw', margin:'auto', marginBotom:'0px' ,paddingTop:'1vh'}} id ='listtitle'> 
         <Autocomplete
         value={title}
         getOptionDisabled={(option) => listNames.includes(option.listName) && disable}
@@ -122,12 +125,18 @@ export default function TableToolbar(props){
                   {
                     option.permission === 'Owner' &&
                     <div style={{display:'flex'}}>
-                      <IconButton  aria-label="delete" onClick={()=>deleteList(option)}>
+                      <IconButton  aria-label="delete" onClick={()=> {
+                        setTitle(option.listName)
+                        setOpenDialog({isOpen:true,dialogType:'clear'})
+                      }}>
                         <DeleteIcon />
                       </IconButton>
                       <IconButton style={{marginLeft:'5vw'}} aria-label="share" onClick={()=>
-                        { getColaborators()
-                          setColaborationDialog(true)}}>
+                        { 
+                          setTitle(option.listName)
+                          getColaborators(option.listName)
+                          setOpenDialog({isOpen:true, dialogType:'colaborator'})
+                        }}>
                         <ShareIcon />
                       </IconButton>
                     </div>
@@ -146,7 +155,7 @@ export default function TableToolbar(props){
         freeSolo
         fullWidth
         renderInput={(params) => (
-          <TextField  {...params} label="Add Title to Create New List / Choose Existing List" onClick={(e)=>{
+          <TextField {...params} label="Add Title to Create New List / Choose Existing List" onClick={(e)=>{
             if(listName ==='' && listItems.length > 0){
                 isDisable(true)
             }else{
@@ -157,11 +166,13 @@ export default function TableToolbar(props){
         )}
       />
       {
-        colborationDilaog &&
+        openDialog.dialogType === 'colaborator' ?
         <UserContext.Consumer>
-        {value => <ColaborateDialog colborationDilaog={colborationDilaog} setColaborateDialog={setColaborateDialog}
-        listName={listName} colaboratorDetails={colaboratorDetails} userId={value?value.userId:null} userEmail={value?value.email:null}/>}
+        {value => <ColaborateDialog colborationDilaog={openDialog.isOpen} setColaborateDialog={setColaborateDialog}
+        listName={title} colaboratorDetails={colaboratorDetails} userId={value?value.userId:null} userEmail={value?value.email:null}/>}
         </UserContext.Consumer>
+        : openDialog.dialogType === 'clear' &&
+        <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll} isDelete ={true}></ClearAllDialog>
       }
         </div>
         </div>

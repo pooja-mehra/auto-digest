@@ -7,10 +7,10 @@ import DialogTitle from '@mui/material/DialogTitle';
 import PaperComponent from './draggablecomponent';
 
 export default function ClearAllDialog(props) {
-  const {openClearAllDialog} = props;
+  const {openClearAllDialog,isDelete} = props;
 
   const handleClose = (isClear) => {
-    props.clearAll(isClear);
+   props.clearAll(isClear)
   };
 
   return (
@@ -21,11 +21,11 @@ export default function ClearAllDialog(props) {
         aria-labelledby="draggable-dialog-title"
       >
         <DialogTitle style={{ cursor: 'move' }} id="draggable-dialog-title">
-          Clear All Items
+        {isDelete ? 'Delete List' :'Clear List'}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure, you want to remove all items?
+            {isDelete? 'Are you sure, you want to delete the list' : 'Are you sure, you want to clear list?'}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

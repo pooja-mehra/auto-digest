@@ -10,6 +10,7 @@ export default function App() {
   const setUserContext = (user) =>{
     setUser(user)
   }
+
   useEffect(()=>{
     window.sessionStorage.removeItem('details')
     window.sessionStorage.removeItem('shoppinglist')
@@ -19,22 +20,23 @@ export default function App() {
   useEffect(()=>{
     UserContext = createContext(user)
   },[user])
-  
+
+
   return (
     <div>
       <header>
         <title><h4 id="title">TextExtractor</h4></title>
       </header>
-      <main >
-        <MainToolabr setUser={setUserContext} user={user}>
-        </MainToolabr>
-          <UserContext.Provider value={user}>
-            <HeaderTabs>
-            </HeaderTabs>
-          </UserContext.Provider>
-      </main>
+        <main>
+          <MainToolabr setUser={setUserContext} user={user}>
+          </MainToolabr>
+            <UserContext.Provider value={user} >
+              <HeaderTabs>
+              </HeaderTabs>
+            </UserContext.Provider>
+        </main>
       <footer>
-      </footer>
+      </footer>      
     </div>
   )
 }

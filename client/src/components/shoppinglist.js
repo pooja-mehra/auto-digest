@@ -36,7 +36,6 @@ export default function ShoppingList(prop) {
     const [openAlert, setOpenAlert] = useState({isOpen:false,status:'none',msg:''});
     const [details, setDetails]  = useState(null)
     const [consumed,setConsumed] = useState({used:0,left:0})
-    
     const header=[{id:'addicon',label:<Fab size="small" aria-label="add"><AddIcon /></Fab>,maxWidth: 50,type:'icon'},
     {id:'name',label:'Name',minWidth: 50, type:"string"},
     {id:'qty',label:'Quantity',minWidth: 50, type:"number"}]
@@ -465,9 +464,9 @@ export default function ShoppingList(prop) {
 
     return(
         <div className="main" style={{display: 'flex',height:'80vh', flexDirection:'column'}}>
-        <div className="layout" >
+        <div className="layout">
         <TableToolbar listName={shoppingList.listName} items = {shoppingList.items} setShoppingListTitle={setShoppingListTitle} 
-        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList} 
+        listNames={shoppingListNames} getShoppingListByName={getShoppingListByName} deleteList={deleteList}
         userId={prop.userId} setpermissions={setpermissions}></TableToolbar>
         <div className='presentlist'>
         <ItemTable shoppingList={shoppingList.items} permission={shoppingList.permission} formatItem={formatItem} deleteItem ={deleteItem} addItem={addItem} header={header} type={'shoppingList'}/>
@@ -479,11 +478,11 @@ export default function ShoppingList(prop) {
           <div className='shoppinglistFooter'>
           <div  className="shoppingfile-upload">
                 <Tooltip title='Save Shopping List' enterTouchDelay={0}>
-                <Button size="small" variant="contained" onClick={()=>{
+                <Button size="small" variant="contained"  id='savelist' onClick={()=>{
                   shoppingList.ownedBy === prop.userEmail ?setUserShoppingList(): editOwnerShoppingList()
                 }}>
                 {!isMobile && 
-                  <AddBoxIcon size="small"/>
+                  <AddBoxIcon size="small" />
                 }
                 Save Shopping List</Button>
               </Tooltip>
@@ -501,7 +500,7 @@ export default function ShoppingList(prop) {
             </div>
             <div className='shoppingfile-upload'>
               <Tooltip title='Save Inventory' enterTouchDelay={0}>
-              <Button size="small" variant="contained" onClick={()=>{
+              <Button size="small" variant="contained" id='saveinventory' onClick={()=>{
                 setShoppingList({...shoppingList,items:shoppingList.items.filter((item,i)=> item.name !== '' && item.qty !== '' && item.qty >0)})
                 prop.userId === '' || prop.userId === null ? setOpenAlert({isOpen:true, status:'error',msg:'Please SIGNIN to proceed'}) : setOpenDialog({isOpen:true,dialogType:'simple'})
               }}>
@@ -516,18 +515,22 @@ export default function ShoppingList(prop) {
           </div>
         </div>
         </div>
-        <div className="layout" >
+        <div className="layout">
         {
           prop.userEmail && prop.userId && prop.accounts &&  prop.accounts.length > 0 &&
           <InventoryFilters getUserGrocery ={getUserGrocery} accounts={prop.accounts} />
         }
         {
           (details !== null || details !== undefined) &&
-          <div className="pastlist">
-          <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
-          changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
-          header={shoppedHeader}/>
-        </div>
+          <div className="pastlist" >
+          {
+            <div id='inventorytable' style={{display:'flex', paddingTop:'4vh', width:'95vw'}}></div>
+          }
+            <ItemTable type={'pastList'} addItem={addItem} shoppingList={shoppedList} consumed={consumed}
+            changeDetails ={changeDetails} getDetails ={getDetails} details={details} updateItem ={updateItem}
+            header={shoppedHeader}>
+            </ItemTable>
+          </div>
 
         }
         </div>
@@ -535,7 +538,7 @@ export default function ShoppingList(prop) {
           openDialog.dialogType === 'simple'?
           <SimpleDialog openDialog ={openDialog.isOpen} itemList={shoppedList} type = {'date'} setDialog={setDialog}></SimpleDialog>
           :openDialog.dialogType === 'clear' &&
-          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll}></ClearAllDialog>
+          <ClearAllDialog openClearAllDialog = {openDialog.isOpen} clearAll = {clearAll} isDelete ={false}></ClearAllDialog>
         }
         </div>
     )

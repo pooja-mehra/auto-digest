@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { Fragment, useState } from "react";
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import TextExtractor from "./textextractor";
@@ -22,18 +22,20 @@ export default function HeaderTabs() {
     return (
         <div>
         <Tabs value={tabNumber} onChange={handleChange} aria-label="icon tabs example" style={{height:'auto',backgroundColor:'#673ab7'}}>
-            <Tab icon={<LibraryAddIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="upload" label="Add to Inventory">
+            <Tab id="addtoinventory" icon={<LibraryAddIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="upload" label="Add to Inventory">
             </Tab>
-            <Tab icon={<InsightsIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Insights"/>
-            <Tab icon={<AddShoppingCartIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Shopping"/>
+            <Tab id= "insights" icon={<InsightsIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Insights"/>
+            <Tab  id="shopping" icon={<AddShoppingCartIcon />} style={{width:'calc(100vw / 4)' ,margin:'auto',color:'white'}} aria-label="detail" label="Shopping"/>
 
         </Tabs>       
         <div>
             {
                 tabNumber === 0 &&
+                <Fragment>
                 <UserContext.Consumer>
                 {value => <TextExtractor userId={value?value.userId:null}/>}
                 </UserContext.Consumer>
+                </Fragment>
             }
             {
                 tabNumber === 1 &&
